@@ -64,7 +64,7 @@ int main(void) {
             int pear = p * 1000 + e * 100 + a * 10 + r;
             int banana = b * 100000 + a * 10000 + n * 1000 + a * 100 + n * 10 + a;
             if (banana + pear + grape == orange)
-                printf("banana = %d, grape = %d, pear = %d and orange = %d is a solution.", banana, grape, pear, orange);
+                printf("banana = %d, grape = %d, pear = %d and orange = %d is a solution.\n", banana, grape, pear, orange);
             digits_org[p] = 0;
         }
     }
