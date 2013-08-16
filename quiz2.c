@@ -42,7 +42,7 @@ void display_set_coded_by(int n) {
 }
 
 int reverse(int n) {
-    unsigned int ans = 0, top_half_ans = 0, bottom_half_ans = 0; 
+    unsigned int top_half_ans = 0, bottom_half_ans = 0; 
     int a_series_end = LENGTH % 2 ? LENGTH / 2 + 1 : LENGTH / 2;
     int b_series_start = LENGTH / 2 + 1; 
     printf("\n");
