@@ -45,7 +45,6 @@ int reverse(int n) {
     unsigned int top_half_ans = 0, bottom_half_ans = 0; 
     int a_series_end = LENGTH % 2 ? LENGTH / 2 + 1 : LENGTH / 2;
     int b_series_start = LENGTH / 2 + 1; 
-    printf("\n");
     for (int i = 0; i < a_series_end; i++) {
         int recorder = 1 << i & n ? 1 : 0;
         top_half_ans |= recorder << (LENGTH - i) - 1;
@@ -54,6 +53,7 @@ int reverse(int n) {
         int recorder = (1 << i -1) & n ? 1 : 0;
         bottom_half_ans |= recorder << (LENGTH - i);
     }
+//    printf("\n")
 //    display_set_coded_by(top_half_ans);
 //    printf("\n");
 //    display_set_coded_by(bottom_half_ans);
