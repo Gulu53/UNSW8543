@@ -225,24 +225,23 @@ bool flush(void) {
 bool four_of_a_kind(void) {
     int off_set = (RANK(hand[0]) == RANK(hand[1])) ? 0 : 1, sum = 0, number_of_addition = 4;
     for (int i = 0; i < number_of_addition; i++ ) {
-        sum += hand[i + off_set];
+        sum += RANK(hand[i + off_set]);
     }
-    // n + (n + 13) + (n + 13 * 2) + (n + 13 * 3) is the sum of the four of a kind. 
-    return ((sum - (6 * NB_OF_RANKS)) / (float)4) == (float)RANK(hand[0 + off_set]) ? true : false;   
+    return (sum == RANK(hand[0 + off_set]) * 4) ? true : false;   
 }
 
 /* Implement this function; 7 lines suffice. */
 bool three_of_a_kind(void) {
-   // 3n + 13(x) is the sum of the three of a kind, where x can be either 0, 1, 2 or 3
-   for (int i = 0; i < 3; i++) {
-       int sum = 0;
-       for (int j = 0; j < 3; j++) {
-            sum += hand[i + j];
-       }
-       if (!((sum - 3 * hand[i]) % NB_OF_RANKS))
-           return true;
-   }
-   return false;
+    // 3n + 13(x) is the sum of the three of a kind, where x can be either 0, 1, 2 or 3
+    for (int i = 0; i < 3; i++) {
+        int sum = 0;
+        for (int j = 0; j < 3; j++) {
+            sum += RANK(hand[i + j]);
+        }
+        if (sum == RANK(hand[i]) * 3)
+            return true;
+    }
+    return false;
 }
 
 /* Implement this function; 5 lines suffice. */
