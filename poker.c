@@ -25,7 +25,7 @@
  *                  . outputs the frequencies of the kinds of hands that have  *
  *                    been obtained.                                           *
  *                                                                             *
- * Written by Eric Martin and **** for COMP9021                                *
+ * Written by Eric Martin and NilH for COMP9021                                *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include <stdbool.h> 
@@ -257,4 +257,13 @@ int nb_of_ranks(void) {
  * You will probably use an expression involving a multiplication by 100.0
  * (not 100, so that the result be a floating point number). */
 void simulate(int N) {
+    int seq_count[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+    char *keys[] = {STRAIGHT_FLUSH, FOUR_OF_A_KIND, FULL_HOUSE, FLUSH, STRAIGHT, THREE_OF_A_KIND, TWO_PAIR, ONE_PAIR, HIGH_CARD}; 
+    for (int i = 1; i <= N; i++) { 
+        get_hand();
+        order_cards();
+        
+        kind_of_hand()
+
+    }
 } 
