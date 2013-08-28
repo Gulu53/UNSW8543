@@ -260,6 +260,7 @@ int nb_of_ranks(void) {
 void simulate(int N) {
     int seq_count[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
     char *keys[] = {HIGH_CARD, ONE_PAIR, TWO_PAIR, THREE_OF_A_KIND, STRAIGHT, FLUSH, FULL_HOUSE, FOUR_OF_A_KIND, STRAIGHT_FLUSH};
+    char *output[] = {"High card:", "One pair:", "Two pair:", "Three of a kind:", "Straight:", "Flush:", "Full house:", "Four of a kind:","Straight flush:"};
     for (int i = 1; i <= N; i++) { 
         get_hand();
         order_cards();
@@ -267,7 +268,7 @@ void simulate(int N) {
     }
     printf("Results of the simulation:\n");
     for (int i = 8; i >= 0; i--) {
-        printf("  %-2s:%7.4f%%\n", keys[i], (seq_count[i] / (float)N) * 100.0);
+        printf("  %-16s %7.4f%%\n", output[i], (seq_count[i] / (float)N) * 100.0);
     }
 }
 
