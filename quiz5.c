@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DIM 4
+#define DIM 10
 
 bool grid[DIM][DIM];
 
@@ -61,7 +61,7 @@ int size_of_largest_construction(void) {
         for (int j = 0; j < DIM; j++) {
             if (grid[i][j]) {
                 if (j == DIM - 1) {
-                    int size_found = construction_size(i, j - counter, j) + j + 1;
+                    int size_found = construction_size(i, j - counter, j) + (counter + 1);
                     largest_block_size = (largest_block_size < size_found) ? size_found : largest_block_size;
                     counter = 0;
                     break;
@@ -69,7 +69,7 @@ int size_of_largest_construction(void) {
                 counter++;
             }
             else if (counter) {
-                int size_found = construction_size(i, j - counter, j - 1) + j - 1;
+                int size_found = construction_size(i, j - counter, j - 1) + (counter);
                 largest_block_size = (largest_block_size < size_found) ? size_found : largest_block_size;
                 counter = 0;
             }
@@ -84,16 +84,16 @@ int construction_size(int i, int j1, int j2) {
             if (grid[i - 1][j1]) {
                 counter++;
                 if (j1 == j2 && counter)
-                   size = counter + construction_size(i - 1, j1 - counter + 1, j1); 
+                   size += counter + construction_size(i - 1, j1 - counter + 1, j1); 
             }
-            else if (counter) 
-                size = counter + construction_size(i - 1, j1 - counter, j1 - 1);
+            else if (counter) {
+                size += counter;
+                size += construction_size(i - 1, j1 - counter, j1 - 1);
+                counter = 0;
+            }
         } 
-        if (counter == 0) 
-            return size;
     }
-    else
-        return size;
+    return size;
 }
 
             
