@@ -84,6 +84,7 @@ bool four_of_a_kind(void);
 bool three_of_a_kind(void);
 int nb_of_ranks(void);
 void simulate(int);
+void strcmp_loc (int*, char**);
 
 /* The sequence of numbers between 0 and 51 represent the cards in the order:
  *   - ace, two, three, ..., ten, jack, queen, king of hearts,
@@ -258,12 +259,26 @@ int nb_of_ranks(void) {
  * (not 100, so that the result be a floating point number). */
 void simulate(int N) {
     int seq_count[] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-    char *keys[] = {STRAIGHT_FLUSH, FOUR_OF_A_KIND, FULL_HOUSE, FLUSH, STRAIGHT, THREE_OF_A_KIND, TWO_PAIR, ONE_PAIR, HIGH_CARD}; 
+    char *keys[] = {HIGH_CARD, ONE_PAIR, TWO_PAIR, THREE_OF_A_KIND, STRAIGHT, FLUSH, FULL_HOUSE, FOUR_OF_A_KIND, STRAIGHT_FLUSH};
+    char *output[] = {"High card:", "One pair:", "Two pair:", "Three of a kind:", "Straight:", "Flush:", "Full house:", "Four of a kind:","Straight flush:"};
     for (int i = 1; i <= N; i++) { 
         get_hand();
         order_cards();
-        
-        kind_of_hand()
-
+        strcmp_loc(seq_count, keys);
     }
-} 
+    printf("Results of the simulation:\n");
+    for (int i = 8; i >= 0; i--) {
+        printf("  %-16s %7.4f%%\n", output[i], (seq_count[i] / (float)N) * 100.0);
+    }
+}
+
+void strcmp_loc (int *seq_count, char **keys) {
+    for (int i = 0; i < 9; i++) {
+        char *ans = kind_of_hand();
+        if (!(strcmp(ans, *(keys + i)))) {
+            *(seq_count + i) = *(seq_count + i) + 1;
+            break;
+        }
+    } 
+}
+
