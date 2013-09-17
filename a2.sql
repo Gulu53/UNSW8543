@@ -118,6 +118,17 @@ begin
 	end loop;
 end;
 $$ language plpgsql;
+
+create or replace function check_executive_func() returns trigger
+as $$
+begin
+        if ((select count(person) from executive where person = new.person) <> 0) then
+                raise exception 'Person cannot be an executive of more than one company.';
+        else
+                return new;
+        end if;
+end;
+$$ language plpgsql;
 --END User Defined Functions
 
 --Views
@@ -139,6 +150,8 @@ create or replace view Q15(Code, MinPrice, AvgPrice, MaxPrice, MinDayGain, AvgDa
 --END Views
 
 --Triggers
+create or replace trigger check_executive before insert or update on Executive for each row execute procedure check_executive_func();
+
 --END Triggers
 
 
