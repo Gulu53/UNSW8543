@@ -104,7 +104,7 @@ declare
 begin
 	for each_code in select distinct code from Q7
 	loop
-		total_dates = (select DATE_PART('day', max("Date")::timestamp - min("Date")::timestamp) from Q7 where code = each_code.code);
+		total_dates = (select count(*) from Q7 where code = each_code.code);
 		total_price = (select sum(price) from asx where code = each_code.code);
 		total_gain = (select sum(gain) from Q7 where code = each_code.code);
 		ans.Code = each_code.code;
