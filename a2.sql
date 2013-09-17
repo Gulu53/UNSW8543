@@ -28,7 +28,7 @@ begin
 	for r in select distinct sector from category
 	loop
 		ans.Sector = r.sector;
-		ans.AvgRating := (select cast(avg(Star) as decimal(10,2)) from rating where code in (select code from category where sector = r.sector));
+		ans.AvgRating := (select avg(Star) from rating where code in (select code from category where sector = r.sector));
 		return next ans; 
 	end loop;
 end;
@@ -87,7 +87,7 @@ begin
 		ans.BeginPrice = (select price from asx where "Date" = (select min("Date") from asx where code = r.code) and code = r.code);
 		ans.EndPrice = (select price from asx where "Date" = (select max("Date") from asx where code = r.code) and code = r.code);
 		ans.Change = ans.EndPrice - ans.BeginPrice;
-		ans.Gain = (cast(((ans.Change / ans.BeginPrice) * 100) as decimal(10,2)));
+		ans.Gain = ((ans.Change / ans.BeginPrice) * 100);
 		return next ans;
 	end loop;
 end;
@@ -112,8 +112,8 @@ begin
 		ans.MaxPrice = (select max(price) from asx where code = each_code.code);
 		ans.MinDayGain = (select min(gain) from Q7 where code = each_code.code);
 		ans.MaxDayGain = (select max(gain) from Q7 where code = each_code.code);
-		ans.AvgPrice = (cast((total_price / (total_dates + 1)) as decimal(10,2)));
-		ans.AvgDayGain = (cast((total_gain / total_dates) as decimal(10,2)));
+		ans.AvgPrice = (total_price / (total_dates + 1));
+		ans.AvgDayGain = (total_gain / total_dates);
 		return next ans;
 	end loop;
 end;
@@ -138,7 +138,7 @@ create or replace view Q3(Name) as select name from Company where code in (selec
 create or replace view Q4(Sector, Number) as select sector, count(*) as number from Category group by sector;
 create or replace view Q5(Name) as select distinct person from executive where code in (select code from company where name in (select * from Q3));
 create or replace view Q6(Name) as select name from company where code in (select code from category where sector = 'Services') and country = 'Australia' and zip like '2%';
-create or replace view Q7("Date", Code, Volume, PrevPrice, Price, Change, Gain) as select "Date", code, volume, prevprice, price, (price - prevprice) as Change, cast((((price - prevprice) / prevprice) * 100) as decimal(10,2)) as Gain from (select *, lag(price) over (partition by code order by "Date") as prevprice from ASX) as a where a.prevprice is not null;
+create or replace view Q7("Date", Code, Volume, PrevPrice, Price, Change, Gain) as select "Date", code, volume, prevprice, price, (price - prevprice) as Change, (((price - prevprice) / prevprice) * 100) as Gain from (select *, lag(price) over (partition by code order by "Date") as prevprice from ASX) as a where a.prevprice is not null;
 create or replace view Q8("Date", Code, Volume) as select * from active_stock() order by "Date", code;
 create or replace view Q9(Sector, Industry, Number) as select sector, industry, count(*) from Category group by industry, sector order by sector, industry;
 create or replace view Q10(Code, Industry) as select code, industry from Category where industry in (select industry from Q9 where number = 1);
@@ -150,7 +150,7 @@ create or replace view Q15(Code, MinPrice, AvgPrice, MaxPrice, MinDayGain, AvgDa
 --END Views
 
 --Triggers
-create or replace trigger check_executive before insert or update on Executive for each row execute procedure check_executive_func();
+create trigger check_executive before insert or update on Executive for each row execute procedure check_executive_func();
 
 --END Triggers
 
