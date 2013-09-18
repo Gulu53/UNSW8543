@@ -122,11 +122,44 @@ $$ language plpgsql;
 create or replace function check_executive_func() returns trigger
 as $$
 begin
-        if ((select count(person) from executive where person = new.person) <> 0) then
-                raise exception 'Person cannot be an executive of more than one company.';
-        else
-                return new;
-        end if;
+	if ((select count(person) from executive where person = new.person) <> 0) then
+		raise exception 'Person cannot be an executive of more than one company.';
+	else
+		return new;
+    end if;
+end;
+$$ language plpgsql;
+
+create or replace function update_stock_rating() returns trigger
+as $$
+declare
+	each_sector record;
+	each_code record;
+begin
+	for each_sector in select distinct sector from Category
+	loop
+		update Rating
+		set Star = 5
+		where Code in (select code from Q7 where gain = (select max(gain) from Q7 where code in (select code from Category where sector = each_sector.sector) and "Date" = new."Date") and "Date" = new."Date");
+		update Rating
+		set Star = 1
+		where Code in (select code from Q7 where gain = (select min(gain) from Q7 where code in (select code from Category where sector = each_sector.sector) and "Date" = new."Date") and "Date" = new."Date");
+	end loop;
+	return null; 
+end;
+$$ language plpgsql;
+
+create or replace function logging_stock_update() returns trigger
+as $$
+begin
+	insert into ASXLog values (
+		now(),
+		old."Date",
+		old.code,
+		old.volume,
+		old.price
+	);	
+	return null;
 end;
 $$ language plpgsql;
 --END User Defined Functions
@@ -151,8 +184,7 @@ create or replace view Q15(Code, MinPrice, AvgPrice, MaxPrice, MinDayGain, AvgDa
 
 --Triggers
 create trigger check_executive before insert or update on Executive for each row execute procedure check_executive_func();
-
+create trigger update_rating after insert on ASX for each row execute procedure update_stock_rating();
+create trigger logging_asx_update after update on ASX for each row execute procedure logging_stock_update();
 --END Triggers
-
-
 
