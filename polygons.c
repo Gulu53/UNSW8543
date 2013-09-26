@@ -52,29 +52,25 @@ int main(int argc, char **argv) {
     }
     return EXIT_SUCCESS;
 }
-
 bool get_input(void) {
     int input_char = 0, expected_width = 0, x_write_loc = 0, y_write_loc = 0;
     for (int y = 0; y < MAX_HEIGHT; y++)
         for (int x = 0; x < MAX_WIDTH; x++)
             input_data[y][x] = -1;
     while ((input_char = getchar()) != EOF) {
-        if (input_char == '\n') { 
-            if (!(y_write_loc))
-                expected_width = x_write_loc;
-            else
-                if (x_write_loc != expected_width)
-                    return false;
+        if (input_char == '\n') {
+            if (x_write_loc == 0)
+                continue;
             if (x_write_loc < MIN_WIDTH)
                 return false;
             y_write_loc++; 
             x_write_loc = 0;
             continue;
         } 
-        else if ((input_char - '0' != 0) && (input_char - '0' != 1)) 
-            return false;
         else if (isspace(input_char))
             continue;
+        else if ((input_char - '0' != 0) && (input_char - '0' != 1)) 
+            return false;
         else {        
             input_data[y_write_loc][x_write_loc] = (signed short int)(input_char - '0'); 
             x_write_loc++;
@@ -102,13 +98,12 @@ bool get_input(void) {
         }
     return true;    
 }
-
 bool get_polygon(int org_x, int org_y, int current_x, int current_y, int polygon_id) {
     int coming_from = 0, direction_offset = 1, current_id = GET_ID(input_data[current_y][current_x]); 
-    if ((current_id == 0) || ((current_id != polygon_id) && (current_id > 1)) || ((current_id == polygon_id) && (org_x != current_x) && (org_y != current_y)))
-        return false; 
     if ((GET_ID(input_data[org_y][org_x]) == polygon_id) && (org_x == current_x) && (org_y == current_y)) 
         return true;
+    if (current_id != 1)
+        return false; 
     if ((coming_from = get_neighbour(current_x, current_y, polygon_id)) < 0) {
         direction_offset = 0;
         coming_from = 0;
@@ -124,16 +119,13 @@ bool get_polygon(int org_x, int org_y, int current_x, int current_y, int polygon
             current_direction = (current_direction + 1 > NW) ? 0 : current_direction + 1;                                    
             continue;
         }
-        if (input_data[current_y + offset[current_direction][0]][current_x + offset[current_direction][1]] < 0) { 
-            current_direction = (current_direction + 1 > NW) ? 0 : current_direction + 1;                                    
-            continue;
-        }
         input_data[current_y][current_x] = PAINT(current_direction, polygon_id);
         if (get_polygon(org_x, org_y, (current_x + offset[current_direction][1]), (current_y + offset[current_direction][0]), polygon_id))
             return true;
+        else
+            input_data[current_y][current_x] = 1;
         current_direction = (current_direction + 1 > NW) ? 0 : current_direction + 1;                                    
     }
-    input_data[current_y][current_x] = 1;
     return false;
 }
 
@@ -157,7 +149,7 @@ void print_matrix(void) {
         for (int x = 0; x < MAX_WIDTH; x++) {
             if (input_data[y][x] >= 0) {
                 nothing = false;
-                printf("%d", GET_ID(input_data[y][x]));
+                printf("%d ", GET_ID(input_data[y][x]));
             }
             else 
                 break;
