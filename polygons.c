@@ -3,7 +3,6 @@
  *                                                                             *
  * Written by Kim for COMP9021                                                 *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +13,7 @@
 #define MAX_WIDTH 50
 #define MIN_HEIGHT 2
 #define MAX_HEIGHT 50
+#define TO_SCALE 0.4
 #define TOTAL_NUMBER_OF_DIR 8
 #define N 0
 #define NE 1
@@ -33,6 +33,11 @@ signed short int offset[8][2] = {{-1, 0},{-1, 1},{0, 1},{1, 1},{1, 0},{1, -1},{0
 bool get_input(void);
 bool get_polygon(int, int, int, int, int);
 signed int get_neighbour(int current_x, int current_y, int polygon_id);
+void print_perimeter(int x, int y);
+float get_area(int x, int y);
+bool check_convex(int x, int y);
+unsigned int get_rotations(int x, int y);
+unsigned int get_depth(int x, int y);
 void print_matrix(void); 
 
 int main(int argc, char **argv) {
@@ -45,7 +50,22 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     if (argc == 1) {
-        /* Insert your code for the case a.out is run with no command line argument */
+        signed int last_polygon = 1;
+        for (int y = 0; y < MAX_HEIGHT; y++)
+            for (int x = 0; x < MAX_WIDTH; x++) {
+                if (input_data[y][x] < 0)
+                    break;
+                if (GET_ID(input_data[y][x]) > last_polygon) {
+                    printf("Polygon %d:\n", GET_ID(input_data[y][x]) - 1);
+                    printf("    Perimeter: ");
+                    print_perimeter(x, y);
+                    printf("    Area: %4.2f\n", get_area(x, y));
+                    printf("    Convex: %s\n", (check_convex(x, y) ? "yes" : "no"));
+                    printf("    Nb of invariant rotations: %d\n", get_rotations(x, y));
+                    printf("    Depth: %d\n", get_depth(x, y));
+                    last_polygon++;
+                }
+            }
     }
     else {
         /* Insert your code for the case a.out is run with print as command line argument */
@@ -87,11 +107,8 @@ bool get_input(void) {
                 break;
             if (input_data[y][x] == 1) {
                 bool ret = get_polygon(x, y, x, y, polygon_id);
-                if (ret) {
-                    printf("Polygon ID: %d\n", polygon_id);
-                    print_matrix();
+                if (ret) 
                     polygon_id++; 
-                }           
                 else
                     return false;
             }
@@ -128,7 +145,6 @@ bool get_polygon(int org_x, int org_y, int current_x, int current_y, int polygon
     }
     return false;
 }
-
 signed int get_neighbour(int current_x, int current_y, int polygon_id) {
     for (int i = 0; i < TOTAL_NUMBER_OF_DIR; i++) { 
         if ((0 > (current_x + offset[i][1])) || ((current_x + offset[i][1]) >= MAX_WIDTH)) 
@@ -142,6 +158,46 @@ signed int get_neighbour(int current_x, int current_y, int polygon_id) {
         }
     }  
     return -1; 
+}
+void print_perimeter(int x, int y) {
+    int current_x = -1, current_y = -1;
+    float a = 0, b = 0;
+    bool init = true;
+    char *plus = " + ", *pending = "*sqrt(.32)";
+    static char perimeter[21];
+    while ((current_x != x) || (current_y != y)) {
+        int direction = -1;
+        if (init) {
+            init = false;
+            current_x = x;
+            current_y = y;
+        }
+        direction = GET_DIRECTION(input_data[current_y][current_x]);
+        (direction % 2) ? b++ : a++;
+        current_x += offset[direction][1];
+        current_y += offset[direction][0];
+    }
+    if (a)  
+        printf("%.1f", a * TO_SCALE);
+    if (b) {
+        if (a)
+            printf("%s", plus);
+        printf("%d%s", (int)b, pending);
+    }
+    putchar('\n');
+    return ;
+}
+float get_area(int x, int y) {
+    return 1.0;
+}
+bool check_convex(int x, int y) {
+    return false;
+}
+unsigned int get_rotations(int x, int y) {
+    return 1;
+}
+unsigned int get_depth(int x, int y) {
+    return 1;
 }
 void print_matrix(void) {
     for (int y = 0; y < MAX_HEIGHT; y++) {
