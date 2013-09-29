@@ -35,6 +35,7 @@ bool get_polygon(int, int, int, int, int);
 signed int get_neighbour(int current_x, int current_y, int polygon_id);
 void print_perimeter(int x, int y);
 float get_area(int x, int y);
+float get_segment_area (int start_x, int start_y, int end_x, int end_y); 
 bool check_convex(int x, int y);
 unsigned int get_rotations(int x, int y);
 unsigned int get_depth(int x, int y);
@@ -59,7 +60,7 @@ int main(int argc, char **argv) {
                     printf("Polygon %d:\n", GET_ID(input_data[y][x]) - 1);
                     printf("    Perimeter: ");
                     print_perimeter(x, y);
-                    printf("    Area: %4.2f\n", get_area(x, y));
+                    printf("    Area: %.2f\n", get_area(x, y));
                     printf("    Convex: %s\n", (check_convex(x, y) ? "yes" : "no"));
                     printf("    Nb of invariant rotations: %d\n", get_rotations(x, y));
                     printf("    Depth: %d\n", get_depth(x, y));
@@ -164,7 +165,6 @@ void print_perimeter(int x, int y) {
     float a = 0, b = 0;
     bool init = true;
     char *plus = " + ", *pending = "*sqrt(.32)";
-    static char perimeter[21];
     while ((current_x != x) || (current_y != y)) {
         int direction = -1;
         if (init) {
@@ -187,9 +187,45 @@ void print_perimeter(int x, int y) {
     putchar('\n');
     return ;
 }
-float get_area(int x, int y) {
+float get_area(int x, int y) { 
+    int start_x = -1, start_y = -1, end_x = -1, end_y = -1, line_gradient = -1;
+    float total_area = 0;
+    int current_x = -1, current_y = -1;
+    bool init = true, line_start = false;
+    while ((current_x != x) || (current_y != y)) {
+        int direction = -1;
+        if (init) {
+            init = false;
+            current_x = x;
+            current_y = y;
+        } 
+        direction = GET_DIRECTION(input_data[current_y][current_x]);
+        if ((direction > E) && (direction < W) && (!(line_start))) {
+            line_start = true;
+            start_x = current_x;
+            start_y = current_y;
+            line_gradient = direction;
+            continue;
+        } 
+        if ((line_start) && (direction != line_gradient)){
+            line_start = false;
+            end_x = current_x;
+            end_y = current_y;
+            printf("Start: (%d, %d)\n", start_x, start_y);
+            printf("End: (%d, %d)\n", end_x, end_y);
+        }
+        else { 
+            current_x += offset[direction][1];
+            current_y += offset[direction][0];
+        }
+    }
+    return total_area;
+}
+
+float get_segment_area (int start_x, int start_y, int end_x, int end_y) {
     return 1.0;
 }
+
 bool check_convex(int x, int y) {
     return false;
 }
