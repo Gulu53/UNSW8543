@@ -27,6 +27,8 @@
 #define GET_DIRECTION(X) ((X >> 12) & 0b0111)
 #define PAINT(DIRECTION, ID) ((DIRECTION << 12) + ID)
 
+typedef struct {int x; int y;}Point;
+
 signed short int input_data[MAX_WIDTH][MAX_HEIGHT];
 signed short int offset[8][2] = {{-1, 0},{-1, 1},{0, 1},{1, 1},{1, 0},{1, -1},{0, -1},{-1, -1}};
 
@@ -35,7 +37,10 @@ bool get_polygon(int, int, int, int, int);
 signed int get_neighbour(int current_x, int current_y, int polygon_id);
 void print_perimeter(int x, int y);
 float get_area(int x, int y);
-float get_segment_area (int start_x, int start_y, int end_x, int end_y); 
+float get_segment_area (Point, Point); 
+void find_rising_edge(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
+void find_rising_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
+void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 bool check_convex(int x, int y);
 unsigned int get_rotations(int x, int y);
 unsigned int get_depth(int x, int y);
@@ -187,10 +192,10 @@ void print_perimeter(int x, int y) {
     putchar('\n');
     return ;
 }
-float get_area(int x, int y) { 
-    int start_x = -1, start_y = -1, end_x = -1, end_y = -1, line_gradient = -1;
+float get_area(int x, int y) {
+    Point falling_start, falling_end; 
     float total_area = 0;
-    int current_x = -1, current_y = -1;
+    int current_x = -1, current_y = -1, line_gradient = -1;
     bool init = true, line_start = false;
     while ((current_x != x) || (current_y != y)) {
         int direction = -1;
@@ -202,17 +207,15 @@ float get_area(int x, int y) {
         direction = GET_DIRECTION(input_data[current_y][current_x]);
         if ((direction > E) && (direction < W) && (!(line_start))) {
             line_start = true;
-            start_x = current_x;
-            start_y = current_y;
+            falling_start.x = current_x;
+            falling_start.y = current_y;
             line_gradient = direction;
-            continue;
         } 
         if ((line_start) && (direction != line_gradient)){
             line_start = false;
-            end_x = current_x;
-            end_y = current_y;
-            printf("Start: (%d, %d)\n", start_x, start_y);
-            printf("End: (%d, %d)\n", end_x, end_y);
+            falling_end.x = current_x;
+            falling_end.y = current_y;
+            total_area += get_segment_area(falling_start, falling_end);
         }
         else { 
             current_x += offset[direction][1];
@@ -221,11 +224,97 @@ float get_area(int x, int y) {
     }
     return total_area;
 }
-
-float get_segment_area (int start_x, int start_y, int end_x, int end_y) {
-    return 1.0;
+float get_segment_area (Point falling_start, Point falling_end) {
+    int direction = -1, id = -1;
+    Point rising_start = falling_end, rising_end = falling_end;
+    float accumulated_area = 0, 
+          total_area = ((falling_end.x + falling_start.x) * TO_SCALE) * ((falling_end.y - falling_start.y) * TO_SCALE) * 0.5;     
+    while (rising_end.y != falling_start.y) {
+        rising_start = falling_end;
+        rising_end = falling_end;
+        find_rising_edge(&falling_start, &falling_end, &rising_start, &rising_end); 
+        accumulated_area += (((rising_end.x + rising_start.x) * TO_SCALE) * ((rising_start.y - rising_end.y) * TO_SCALE)) * 0.5;  
+    }
+    return  total_area - accumulated_area; 
 }
-
+void find_rising_edge(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end) { 
+    while (rising_start->x >= 0) {    
+        int id = GET_ID(input_data[rising_start->y][rising_start->x]);
+        int direction = GET_DIRECTION(input_data[rising_start->y][rising_start->x]); 
+        if ((rising_start->x == falling_end->x) && (rising_start->y == falling_end->y)) { 
+            if ((direction == N) || (direction == NW)) {
+                *(rising_end) = *(rising_start);     
+                find_rising_end(falling_start, falling_end, rising_start, rising_end);
+                break;
+            }
+        }
+        else if ((id == GET_ID(input_data[falling_end->y][falling_end->x])) && ((direction > W) || (direction < E))) {
+            *(rising_end) = *(rising_start);           
+            find_rising_end(falling_start, falling_end, rising_start, rising_end);
+            break;
+        }
+        rising_start->x += offset[W][1];
+        rising_start->y += offset[W][0];
+    }
+}
+void find_rising_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end) {
+    int direction = GET_DIRECTION(input_data[rising_start->y][rising_start->x]);
+    bool reset = false;
+    while (rising_end->y != falling_start->y) {
+        if (GET_DIRECTION(input_data[rising_end->y][rising_end->x]) != direction) {
+            reset_falling_end(falling_start, falling_end, rising_start, rising_end);
+            reset = true;
+            break;  
+        }
+        else {
+            rising_end->x += offset[direction][1];
+            rising_end->y += offset[direction][0];
+        }
+    }
+    if ((!(reset)) && ((rising_end->x != falling_start->x) || (rising_end->y != falling_start->y))) 
+        reset_falling_end(falling_start, falling_end, rising_start, rising_end);
+}
+void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end) {
+    int top = 1, id = GET_ID(input_data[rising_start->y][rising_start->x]), direction = GET_DIRECTION(input_data[rising_end->y][rising_end->x + top]); 
+    while ((GET_ID(input_data[rising_end->y][rising_end->x + top]) != id) || ((direction <= E) || (direction >= W))) { 
+        top++; 
+        direction = GET_DIRECTION(input_data[rising_end->y][rising_end->x + top]); 
+    }
+    Point temp;
+    temp.x = rising_end->x + top;
+    temp.y = rising_end->y;
+    int start_direction = GET_DIRECTION(input_data[temp.y][temp.x]);
+    while((GET_DIRECTION(input_data[temp.y][temp.x]) == start_direction) && ((temp.x != falling_end->x) || (temp.y != falling_end->y))) {
+        temp.x += offset[start_direction][1];
+        temp.y += offset[start_direction][0];
+    }
+    if ((falling_end->x == temp.x) && (falling_end->y == temp.y)) {
+        falling_end->x = rising_end->x + top;
+        falling_end->y = rising_end->y;
+    }
+    else {
+        //reset the rising_end point
+        int count = 1, lowest_point = 0;
+        while (GET_ID(input_data[temp.y][temp.x - count]) != GET_ID(input_data[falling_start->y][falling_start->x]))
+            count++;
+        rising_end->x = temp.x - count; 
+        rising_end->y = temp.y;
+        //reset the falling_end point
+        while ((temp.x != falling_start->x) || (temp.y != falling_start->y)) {
+            lowest_point = (temp.y > lowest_point) ? temp.y : lowest_point;
+            int direction = GET_DIRECTION(input_data[temp.y][temp.x]);
+            temp.y += offset[direction][0];
+            temp.x += offset[direction][1];
+        }
+        while (temp.y < lowest_point) {
+            int direction = GET_DIRECTION(input_data[temp.y][temp.x]);
+            temp.y += offset[direction][0];
+            temp.x += offset[direction][1];
+        }
+        falling_end->x = temp.x;
+        falling_end->y = temp.y;
+    }
+} 
 bool check_convex(int x, int y) {
     return false;
 }
@@ -241,7 +330,7 @@ void print_matrix(void) {
         for (int x = 0; x < MAX_WIDTH; x++) {
             if (input_data[y][x] >= 0) {
                 nothing = false;
-                printf("%d ", GET_ID(input_data[y][x]));
+                printf("%d ", GET_DIRECTION(input_data[y][x]));
             }
             else 
                 break;
