@@ -42,6 +42,7 @@ void find_rising_edge(Point* falling_start, Point* falling_end, Point* rising_st
 void find_rising_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 bool check_convex(int x, int y);
+bool check_vertexes(int org_direction, int future_direction, int vertex_x, int vertex_y);
 unsigned int get_rotations(int x, int y);
 unsigned int get_depth(int x, int y);
 void print_matrix(void); 
@@ -316,7 +317,49 @@ void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_s
     }
 } 
 bool check_convex(int x, int y) {
-    return false;
+    //initialise direction with the starting point
+    int current_x = -1, current_y = -1, org_direction = GET_DIRECTION(input_data[x][y]);
+    bool init = true;
+    while ((current_x != x) || (current_y != y)) { 
+        if (init) {
+            init = false;
+            current_x = x;
+            current_y = y;
+        }
+        //if this point is one of polygon's vertexes
+        int future_direction = GET_DIRECTION(input_data[current_y][current_x]);
+        if (org_direction != future_direction) {
+            bool ret = check_vertexes(org_direction, future_direction, current_x, current_y);
+            //if this particular vertex is fine, then set the orginal direction to the future direction
+            if (ret)
+                org_direction = future_direction;
+            else
+                return false;
+        }
+        current_x += offset[future_direction][1];
+        current_y += offset[future_direction][0];
+    }
+    int direction_from_start = GET_DIRECTION(input_data[x][y]);
+    return check_vertexes(org_direction, direction_from_start, x, y);
+}
+bool check_vertexes(int org_direction, int future_direction, int vertex_x, int vertex_y) {
+    int coming_from = (org_direction + 4 > NW) ? (org_direction + 4 - 8) : (org_direction + 4);
+    int start_direction = (coming_from + 1 > 7) ? N : (coming_from + 1);
+    int nb_direction = (future_direction > start_direction) ? (future_direction - start_direction) : (future_direction + 8 - start_direction);
+    for(int i = 0; i < nb_direction; i++) {
+        int current_direction = (start_direction + i > 7) ? (start_direction + i - 8) : (start_direction + i);
+        int current_y = vertex_y + offset[current_direction][0];
+        int current_x = vertex_x + offset[current_direction][1]; 
+        while ((current_x >= 0) && (current_x < MAX_WIDTH) && (current_y >= 0) && (current_y < MAX_HEIGHT)) {
+            if (GET_ID(input_data[current_y][current_x]) < 0)
+               break; 
+            if (GET_ID(input_data[current_y][current_x]) == GET_ID(input_data[vertex_y][vertex_x]))
+                return false;
+            current_y += offset[current_direction][0];
+            current_x += offset[current_direction][1]; 
+        }
+    } 
+    return true;
 }
 unsigned int get_rotations(int x, int y) {
     return 1;
