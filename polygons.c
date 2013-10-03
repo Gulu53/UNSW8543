@@ -42,8 +42,6 @@ void find_rising_edge(Point* falling_start, Point* falling_end, Point* rising_st
 void find_rising_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 bool check_convex(int x, int y);
-bool check_vertexes(int org_direction, int future_direction, int vertex_x, int vertex_y);
-bool check_sector(int diagnol_direction, int vertex_x, int vertex_y, int x_offset, int y_offset);
 unsigned int get_rotations(int x, int y);
 unsigned int get_depth(int x, int y);
 void print_matrix(void); 
@@ -330,9 +328,9 @@ bool check_convex(int x, int y) {
         //if this point is one of polygon's vertexes
         int future_direction = GET_DIRECTION(input_data[current_y][current_x]);
         if (org_direction != future_direction) {
-            bool ret = check_vertexes(org_direction, future_direction, current_x, current_y);
-            //if this particular vertex is fine, then set the orginal direction to the future direction
-            if (ret)
+            int coming_from = (org_direction + 4 > NW) ? (org_direction + 4 - 8) : (org_direction + 4);
+            int angle = (future_direction - coming_from > 0) ? ((future_direction - coming_from) * 45) : ((future_direction - coming_from + 8) * 45);
+            if (angle >= 180)
                 org_direction = future_direction;
             else
                 return false;
@@ -340,56 +338,7 @@ bool check_convex(int x, int y) {
         current_x += offset[future_direction][1];
         current_y += offset[future_direction][0];
     }
-    int direction_from_start = GET_DIRECTION(input_data[x][y]);
-    return check_vertexes(org_direction, direction_from_start, x, y);
-}
-bool check_vertexes(int org_direction, int future_direction, int vertex_x, int vertex_y) {
-    int coming_from = (org_direction + 4 > NW) ? (org_direction + 4 - 8) : (org_direction + 4);
-    while (coming_from != future_direction) {
-        int x_offset = 0, y_offset = 0;
-        int starting_diagnol = (!(coming_from % 2)) ? (coming_from + 1) : coming_from;
-        if (starting_diagnol > coming_from) { 
-            x_offset = offset[coming_from][1] - offset[starting_diagnol][1];
-            y_offset = offset[coming_from][0] - offset[starting_diagnol][0];
-        }
-        else {
-            int next_direction = (coming_from + 1 > NW) ? N : (coming_from + 1);
-            x_offset = offset[next_direction][1] - offset[starting_diagnol][1];
-            y_offset = offset[next_direction][0] - offset[starting_diagnol][0];
-        }
-        bool ret = check_sector(starting_diagnol, vertex_x, vertex_y, x_offset, y_offset);
-        if (ret)
-            coming_from = (coming_from + 1 > NW) ? N : (coming_from + 1);
-        else
-            return false;
-    }
-    return true;
-}
-bool check_sector(int diagnol_direction, int vertex_x, int vertex_y, int x_offset, int y_offset) {
-    int *comparing_target,  replica_x = -1, replica_y = -1, org_x = vertex_x, org_y = vertex_y, org = -1;
-    if (x_offset) {
-        comparing_target = &replica_x; 
-        org = vertex_x;
-    }
-    else { 
-        comparing_target = &replica_y;
-        org = vertex_y;
-    }
-    vertex_x += offset[diagnol_direction][1];
-    vertex_y += offset[diagnol_direction][0];
-    while ((vertex_x >= 0) && (vertex_y >= 0) && (vertex_y < MAX_WIDTH) && (vertex_y < MAX_HEIGHT) && (input_data[vertex_y][vertex_x] > 0)) {
-        replica_y = vertex_y + y_offset;
-        replica_x = vertex_x + x_offset;
-        while (*comparing_target != org) {
-            if(GET_ID(input_data[replica_y][replica_x]) == GET_ID(input_data[org_y][org_x]))
-                return false;
-            replica_y += y_offset;
-            replica_x += x_offset;
-        }     
-        vertex_x += offset[diagnol_direction][1];
-        vertex_y += offset[diagnol_direction][0];
-    }  
-    return true;
+      return true;
 }
 unsigned int get_rotations(int x, int y) {
     return 1;
