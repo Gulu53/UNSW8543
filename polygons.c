@@ -35,14 +35,15 @@ signed short int offset[8][2] = {{-1, 0},{-1, 1},{0, 1},{1, 1},{1, 0},{1, -1},{0
 bool get_input(void);
 bool get_polygon(int, int, int, int, int);
 signed int get_neighbour(int current_x, int current_y, int polygon_id);
-void print_perimeter(int x, int y);
+int print_perimeter(int x, int y);
 float get_area(int x, int y);
 float get_segment_area (Point, Point); 
 void find_rising_edge(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 void find_rising_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end); 
 bool check_convex(int x, int y);
-unsigned int get_rotations(int x, int y);
+unsigned int get_rotations(int x, int y, int total_points);
+int get_turning_difference(int* x, int* y);
 unsigned int get_depth(int x, int y);
 void print_matrix(void); 
 
@@ -64,10 +65,10 @@ int main(int argc, char **argv) {
                 if (GET_ID(input_data[y][x]) > last_polygon) {
                     printf("Polygon %d:\n", GET_ID(input_data[y][x]) - 1);
                     printf("    Perimeter: ");
-                    print_perimeter(x, y);
+                    int total_points = print_perimeter(x, y);
                     printf("    Area: %.2f\n", get_area(x, y));
                     printf("    Convex: %s\n", (check_convex(x, y) ? "yes" : "no"));
-                    printf("    Nb of invariant rotations: %d\n", get_rotations(x, y));
+                    printf("    Nb of invariant rotations: %d\n", get_rotations(x, y, total_points));
                     printf("    Depth: %d\n", get_depth(x, y));
                     last_polygon++;
                 }
@@ -165,7 +166,7 @@ signed int get_neighbour(int current_x, int current_y, int polygon_id) {
     }  
     return -1; 
 }
-void print_perimeter(int x, int y) {
+int print_perimeter(int x, int y) {
     int current_x = -1, current_y = -1;
     float a = 0, b = 0;
     bool init = true;
@@ -190,7 +191,7 @@ void print_perimeter(int x, int y) {
         printf("%d%s", (int)b, pending);
     }
     putchar('\n');
-    return ;
+    return a + b;
 }
 float get_area(int x, int y) {
     Point falling_start, falling_end; 
@@ -340,10 +341,55 @@ bool check_convex(int x, int y) {
     }
       return true;
 }
-unsigned int get_rotations(int x, int y) {
+unsigned int get_rotations(int x, int y, int total_points) {
+    if ((total_points % 2) && (total_points % 4))
+        return 1;
+    int points_to_check = 0;
+    if (!(total_points % 4))
+        points_to_check = 4;
+    else 
+        points_to_check = 2;
+    while (points_to_check) {
+        int trend_start_x = x, trend_start_y = y, turning_offset = total_points / points_to_check,total_steps = turning_offset * (points_to_check - 1);
+        while (total_steps) {
+            int direction = GET_DIRECTION(input_data[trend_start_y][trend_start_x]);
+            trend_start_x += offset[direction][1];
+            trend_start_y += offset[direction][0];
+            total_steps --;
+        }
+        int current_x = -1, current_y = -1;
+        bool init = true, turning_flag = true;
+        while ((current_x != x) || (current_y != y)) {
+            if (init) {
+                current_x = x;
+                current_y = y;
+                init = false;
+            }
+            int turning_diff1 = get_turning_difference(&current_x, &current_y);
+            int turning_diff2 = get_turning_difference(&trend_start_x, &trend_start_y);
+            if (turning_diff1 != turning_diff2) {
+                turning_flag = false;
+                break;         
+            }    
+        }
+        if (turning_flag) 
+            return points_to_check;
+        else
+            points_to_check -= 2;
+    }
     return 1;
 }
+int get_turning_difference(int* x, int* y) {
+    int original_direction = GET_DIRECTION(input_data[*y][*x]), current_direction = original_direction;
+    while (original_direction == current_direction) {
+        *y += offset[current_direction][0]; 
+        *x += offset[current_direction][1];
+        current_direction = GET_DIRECTION(input_data[*y][*x]);
+    }
+    return (current_direction - original_direction > 0) ? (current_direction - original_direction) : (current_direction - original_direction + 8);
+}
 unsigned int get_depth(int x, int y) {
+    
     return 1;
 }
 void print_matrix(void) {
