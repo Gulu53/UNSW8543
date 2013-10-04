@@ -45,6 +45,7 @@ bool check_convex(int x, int y);
 unsigned int get_rotations(int x, int y, int total_points);
 int get_turning_difference(int* x, int* y);
 unsigned int get_depth(int x, int y);
+float determine_edge(int x, int y);
 void print_matrix(void); 
 
 int main(int argc, char **argv) {
@@ -389,8 +390,38 @@ int get_turning_difference(int* x, int* y) {
     return (current_direction - original_direction > 0) ? (current_direction - original_direction) : (current_direction - original_direction + 8);
 }
 unsigned int get_depth(int x, int y) {
-    
-    return 1;
+    int current_x = x, current_y = y, org_id = GET_ID(input_data[y][x]); 
+    float depth = 0;
+    while ((current_x < MAX_WIDTH) && (input_data[current_y][current_x] >= 0)) { 
+        int current_id = GET_ID(input_data[current_y][current_x]);
+        if ((current_id > 0) && (current_id != org_id))  
+            depth += determine_edge(current_x, current_y);
+        current_x += offset[E][1];
+        current_y += offset[E][0];
+    }     
+    return (depth < 0) ? ((unsigned int)(depth * -1)) : (unsigned int)(depth);
+}
+float determine_edge(int x, int y) {
+    int current_direction = GET_DIRECTION(input_data[y][x]);
+    float pre_status = 1, current_status = 1;
+    int previous_direction = get_neighbour(x, y, GET_ID(input_data[y][x]));
+    previous_direction = (previous_direction + 4 > NW) ? (previous_direction + 4 - 8) : (previous_direction + 4); 
+    if ((previous_direction > E) && (previous_direction < W))
+        pre_status = -1;
+    if ((current_direction > E) && (current_direction < W))
+        current_status = -1;
+    if ((previous_direction == E) || (previous_direction == W)) { 
+        pre_status = 0;
+        current_status /= 2;
+    }
+    if ((current_direction == E) || (current_direction == W)) {
+        current_status = 0;
+        pre_status /= 2;
+    }
+    float summation = pre_status + current_status;
+    if ((summation == 2) || (summation == -2))
+        summation /= 2;
+    return summation;
 }
 void print_matrix(void) {
     for (int y = 0; y < MAX_HEIGHT; y++) {
