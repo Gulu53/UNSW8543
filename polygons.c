@@ -342,7 +342,7 @@ void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_s
 } 
 bool check_convex(int x, int y) {
     //initialise direction with the starting point
-    int current_x = -1, current_y = -1, org_direction = GET_DIRECTION(input_data[x][y]);
+    int current_x = -1, current_y = -1, org_direction = GET_DIRECTION(input_data[y][x]);
     bool init = true;
     while ((current_x != x) || (current_y != y)) { 
         if (init) {
@@ -552,7 +552,7 @@ void print_matrix(void) {
         for (int x = 0; x < MAX_WIDTH; x++) {
             if (input_data[y][x] >= 0) {
                 nothing = false;
-                printf("%d ", GET_DIRECTION(input_data[y][x]));
+                printf("%d ", GET_ID(input_data[y][x]));
             }
             else 
                 break;
