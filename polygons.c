@@ -28,6 +28,7 @@
 #define PAINT(DIRECTION, ID) ((DIRECTION << 12) + ID)
 
 typedef struct {int x; int y;}Point;
+typedef struct {int start_x; int start_y; int id; float area; unsigned int depth;} Polygon;
 
 signed short int input_data[MAX_WIDTH][MAX_HEIGHT];
 signed short int offset[8][2] = {{-1, 0},{-1, 1},{0, 1},{1, 1},{1, 0},{1, -1},{0, -1},{-1, -1}};
@@ -46,6 +47,10 @@ unsigned int get_rotations(int x, int y, int total_points);
 int get_turning_difference(int* x, int* y);
 unsigned int get_depth(int x, int y);
 float determine_edge(int x, int y);
+void print_boundary(void);
+int polygon_init(Polygon**);
+void print_each_polygon (Polygon**, int);
+void print_vertexes(int x, int y);
 void print_matrix(void); 
 
 int main(int argc, char **argv) {
@@ -76,7 +81,25 @@ int main(int argc, char **argv) {
             }
     }
     else {
-        /* Insert your code for the case a.out is run with print as command line argument */
+        Polygon **pt_polygon_list;  
+        printf("\\documentclass[10pt]{article}\n");
+        printf("\\usepackage{tikz}\n");
+        printf("\\usepackage[margin=0cm]{geometry}\n");
+        printf("\\pagestyle{empty}\n\n");
+        printf("\\begin{document}\n\n");
+        printf("\\vspace*{\\fill}\n");
+        printf("\\begin{center}\n");
+        printf("\\begin{tikzpicture}[x=0.4cm, y=-0.4cm, thick, brown]\n");
+        print_boundary();
+        Polygon* polygon_list = (Polygon*)malloc(sizeof(Polygon));
+        pt_polygon_list = &(polygon_list);
+        int size = polygon_init(pt_polygon_list);
+        print_each_polygon (pt_polygon_list, size);
+        free(*pt_polygon_list);
+        printf("\\end{tikzpicture}\n");
+        printf("\\end{center}\n");
+        printf("\\vspace*{\\fill}\n\n");
+        printf("\\end{document}\n");
     }
     return EXIT_SUCCESS;
 }
@@ -422,6 +445,106 @@ float determine_edge(int x, int y) {
     if ((summation == 2) || (summation == -2))
         summation /= 2;
     return summation;
+}
+void print_boundary(void) {
+    int x_boundary, y_boundary;
+    for (y_boundary = 0; y_boundary < MAX_HEIGHT; y_boundary++) {
+        if (input_data[y_boundary][0] < 0)
+            break;
+    }
+    for (x_boundary = 0; x_boundary < MAX_WIDTH; x_boundary++) {
+        if (input_data[0][x_boundary] < 0)
+            break;
+    }
+    x_boundary--;
+    y_boundary--;
+    printf("\\draw[ultra thick] (0, 0) -- (%d, 0) -- (%d, %d) -- (0, %d) -- cycle;\n", x_boundary, x_boundary, y_boundary, y_boundary);
+}
+int polygon_init(Polygon** pt_polygon_list) {
+    int last_polygon = 1, size = 1;
+    bool init = true;
+    for (int y = 0; y < MAX_HEIGHT; y++)
+        for (int x = 0; x < MAX_WIDTH; x++) {
+            if (input_data[y][x] < 0)
+                break;
+            if (GET_ID(input_data[y][x]) > last_polygon) { 
+                if (init)
+                    init = false;
+                else {
+                    size++;
+                    *pt_polygon_list = realloc(*pt_polygon_list, sizeof(Polygon) * size);
+                }
+                Polygon this_polygon;
+                this_polygon.start_x = x;
+                this_polygon.start_y = y;
+                this_polygon.id = GET_ID(input_data[y][x]);
+                this_polygon.depth = get_depth(x, y);
+                this_polygon.area = get_area(x, y);
+                *(*(pt_polygon_list) + size - 1) = this_polygon;
+                last_polygon++;
+            }   
+        }
+    Polygon* temp_polygon_list = (Polygon*)malloc(sizeof(Polygon) * size);
+    int total_member = size, write_cursor = 0;
+    for (int depth = 0; total_member > 0; depth++) {
+        for (int j = 0; j < size; j++) {
+            if ((*(*(pt_polygon_list) + j)).depth == depth) {
+                *(temp_polygon_list + write_cursor) = *(*(pt_polygon_list) + j);
+                write_cursor++;
+                total_member--;
+            }
+        }
+    }
+    float area_max = 0, area_min = 100000;
+    for (int j = 0; j < size; j++) {
+        area_max = ((*(temp_polygon_list + j)).area > area_max) ? (*(temp_polygon_list + j)).area : area_max;
+        area_min = ((*(temp_polygon_list + j)).area < area_min) ? (*(temp_polygon_list + j)).area : area_min;
+    } 
+    for (int j = 0; j < size; j++) {
+        float area = (*(temp_polygon_list + j)).area;
+        int converted = (int)((1 - ((area - area_min) / (area_max - area_min))) * 1000);
+        if (converted % 10 >= 5)
+            converted = (converted + 10) / 10;
+        else
+            converted /= 10;
+        (*(temp_polygon_list + j)). area = (float)converted; 
+    }
+    for (int j = 0; j < size; j++) 
+        *(*(pt_polygon_list) + j) = *(temp_polygon_list + j);
+    free(temp_polygon_list);
+    return size;
+}
+void print_each_polygon (Polygon** polygon_list, int size) {
+    int depth = -1;
+    for (int j = 0; j < size; j++) {
+        if ((*(*(polygon_list) + j)).depth != depth) {
+            depth = (*(*(polygon_list) + j)).depth;
+            printf("%%Depth %d\n", depth);
+        }
+        printf("\\filldraw[fill=orange!%d!yellow]",(int)(*(*(polygon_list) + j)).area);
+        print_vertexes((*(*(polygon_list) + j)).start_x, (*(*(polygon_list) + j)).start_y);
+        putchar('\n');
+    }
+}
+void print_vertexes(int x, int y) {
+    printf(" (%d, %d)", x, y);
+    int current_x = -1, current_y = -1, org_direction = GET_DIRECTION(input_data[y][x]), current_direction = -1;
+    bool init = true;
+    while ((current_x != x) || (current_y != y)) {
+        if (init) {
+            init = false;
+            current_x = x;
+            current_y = y;
+        }
+        current_direction = GET_DIRECTION(input_data[current_y][current_x]);
+        if (current_direction != org_direction) {
+            org_direction = current_direction;
+            printf(" -- (%d, %d)", current_x, current_y);
+        }
+        current_x += offset[current_direction][1];
+        current_y += offset[current_direction][0];
+    }
+    printf(" -- cycle;");
 }
 void print_matrix(void) {
     for (int y = 0; y < MAX_HEIGHT; y++) {
