@@ -198,7 +198,7 @@ signed int get_neighbour(int current_x, int current_y, int polygon_id) {
         if (GET_ID(input_data[current_y + offset[i][0]][current_x + offset[i][1]]) == polygon_id) {
             int pre_direction = GET_DIRECTION(input_data[current_y + offset[i][0]][current_x + offset[i][1]]);
             if (((pre_direction + 4 > NW) ? (pre_direction + 4 - 8) : (pre_direction + 4)) == i)
-               return i; 
+                return i; 
         }
     }  
     return -1; 
@@ -389,7 +389,7 @@ bool check_convex(int x, int y) {
         current_x += offset[future_direction][1];
         current_y += offset[future_direction][0];
     }
-      return true;
+    return true;
 }
 unsigned int get_rotations(int x, int y, int total_points) {
     if ((total_points % 2) && (total_points % 4))
