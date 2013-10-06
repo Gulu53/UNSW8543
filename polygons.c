@@ -23,9 +23,11 @@
 #define SW 5
 #define W 6
 #define NW 7
-#define GET_ID(X) (X & 0b0000111111111111)
-#define GET_DIRECTION(X) ((X >> 12) & 0b0111)
-#define PAINT(DIRECTION, ID) ((DIRECTION << 12) + ID)
+//Use twelve bits for polygon IDs
+#define GET_ID(X) (X & 0b0000111111111111)      
+//Use three bits for direction coding
+#define GET_DIRECTION(X) ((X >> 12) & 0b0111)       
+#define PAINT(DIRECTION, ID) ((DIRECTION << 12) + ID)       
 
 typedef struct {int x; int y;}Point;
 typedef struct {int start_x; int start_y; int id; float area; unsigned int depth;} Polygon;
@@ -105,9 +107,10 @@ int main(int argc, char **argv) {
 }
 bool get_input(void) {
     int input_char = 0, expected_width = 0, x_write_loc = 0, y_write_loc = 0;
+    //Initialise a 50 x 50 array with values of negative 1.
     for (int y = 0; y < MAX_HEIGHT; y++)
         for (int x = 0; x < MAX_WIDTH; x++)
-            input_data[y][x] = -1;
+            input_data[y][x] = -1;      
     while ((input_char = getchar()) != EOF) {
         if (input_char == '\n') {
             if (x_write_loc == 0)
@@ -131,34 +134,42 @@ bool get_input(void) {
     }
     if (y_write_loc < MIN_HEIGHT)
         return false;
-    int polygon_id = 2; 
+    //Polygon ID starts with 2 
+    int polygon_id = 2;     
     for (int y = 0; y < MAX_HEIGHT; y++)
         for (int x = 0; x < MAX_WIDTH; x++) {
             if (input_data[y][x] < 0)
                 break;
             if (input_data[y][x] == 1) {
-                bool ret = get_polygon(x, y, x, y, polygon_id);
-                if (ret) 
+                //Recursive function which identifies the polygon with a given point
+                bool ret = get_polygon(x, y, x, y, polygon_id);     
+                if (ret)        
                     polygon_id++; 
                 else
-                    return false;
+                    //If the given point is not part of any polygon, then the input is not valid.
+                    return false;       
             }
         }
     return true;    
 }
 bool get_polygon(int org_x, int org_y, int current_x, int current_y, int polygon_id) {
     int coming_from = 0, direction_offset = 1, current_id = GET_ID(input_data[current_y][current_x]); 
+    //return if the current_x and current_y has came back to the starting location.
     if ((GET_ID(input_data[org_y][org_x]) == polygon_id) && (org_x == current_x) && (org_y == current_y)) 
-        return true;
+        return true;        
+    //If this point is not a free point.
     if (current_id != 1)
-        return false; 
-    if ((coming_from = get_neighbour(current_x, current_y, polygon_id)) < 0) {
-        direction_offset = 0;
+        return false;       
+    //if this point is a starting point of the polygon
+    if ((coming_from = get_neighbour(current_x, current_y, polygon_id)) < 0) {      
+        direction_offset = 0;   
         coming_from = 0;
     }
-    int start_direction = (coming_from + 1 > 7) ? N : (coming_from + 1);
-    int current_direction = start_direction;
-    for (int i = 1; i <= (TOTAL_NUMBER_OF_DIR - direction_offset); i++) {
+    //Set the beginning of the searching direction
+    int start_direction = (coming_from + 1 > 7) ? N : (coming_from + 1);        
+    int current_direction = start_direction;        
+    //Seach for all the possible directions 
+    for (int i = 1; i <= (TOTAL_NUMBER_OF_DIR - direction_offset); i++) {       
         if ((0 > (current_x + offset[current_direction][1])) || ((current_x + offset[current_direction][1]) >= MAX_WIDTH)) { 
             current_direction = (current_direction + 1 > NW) ? 0 : current_direction + 1;                                    
             continue;
@@ -167,17 +178,19 @@ bool get_polygon(int org_x, int org_y, int current_x, int current_y, int polygon
             current_direction = (current_direction + 1 > NW) ? 0 : current_direction + 1;                                    
             continue;
         }
-        input_data[current_y][current_x] = PAINT(current_direction, polygon_id);
+        //if this is a valid direction, paint it with Polygon ID
+        input_data[current_y][current_x] = PAINT(current_direction, polygon_id);        
         if (get_polygon(org_x, org_y, (current_x + offset[current_direction][1]), (current_y + offset[current_direction][0]), polygon_id))
             return true;
         else
-            input_data[current_y][current_x] = 1;
+            //otherwise reset current point back to 1.
+            input_data[current_y][current_x] = 1;       
         current_direction = (current_direction + 1 > NW) ? 0 : current_direction + 1;                                    
     }
     return false;
 }
 signed int get_neighbour(int current_x, int current_y, int polygon_id) {
-    for (int i = 0; i < TOTAL_NUMBER_OF_DIR; i++) { 
+    for (int i = 0; i < TOTAL_NUMBER_OF_DIR; i++) {  
         if ((0 > (current_x + offset[i][1])) || ((current_x + offset[i][1]) >= MAX_WIDTH)) 
             continue;
         if ((0 > (current_y + offset[i][0])) || ((current_y + offset[i][0]) >= MAX_HEIGHT))
@@ -203,7 +216,8 @@ int print_perimeter(int x, int y) {
             current_y = y;
         }
         direction = GET_DIRECTION(input_data[current_y][current_x]);
-        (direction % 2) ? b++ : a++;
+        //Future direction is straight or diagnol?
+        (direction % 2) ? b++ : a++;        
         current_x += offset[direction][1];
         current_y += offset[direction][0];
     }
@@ -230,17 +244,20 @@ float get_area(int x, int y) {
             current_y = y;
         } 
         direction = GET_DIRECTION(input_data[current_y][current_x]);
-        if ((direction > E) && (direction < W) && (!(line_start))) {
+        //If this point is the start of the falling edge
+        if ((direction > E) && (direction < W) && (!(line_start))) {        
             line_start = true;
             falling_start.x = current_x;
             falling_start.y = current_y;
             line_gradient = direction;
         } 
-        if ((line_start) && (direction != line_gradient)){
+        //If this point is the end of the falling edge
+        if ((line_start) && (direction != line_gradient)){      
             line_start = false;
             falling_end.x = current_x;
             falling_end.y = current_y;
-            total_area += get_segment_area(falling_start, falling_end);
+            //Get the area enclosed by this edge and the rising edge next to it.
+            total_area += get_segment_area(falling_start, falling_end);     
         }
         else { 
             current_x += offset[direction][1];
@@ -249,12 +266,13 @@ float get_area(int x, int y) {
     }
     return total_area;
 }
-float get_segment_area (Point falling_start, Point falling_end) {
+float get_segment_area (Point falling_start, Point falling_end) {   
     int direction = -1, id = -1;
     Point rising_start = falling_end, rising_end = falling_end;
     float accumulated_area = 0, 
-          total_area = ((falling_end.x + falling_start.x) * TO_SCALE) * ((falling_end.y - falling_start.y) * TO_SCALE) * 0.5;     
-    while (rising_end.y != falling_start.y) {
+          total_area = ((falling_end.x + falling_start.x) * TO_SCALE) * ((falling_end.y - falling_start.y) * TO_SCALE) * 0.5;        
+    //While rising end point y does not equals to the falling start point y
+    while (rising_end.y != falling_start.y) {       
         rising_start = falling_end;
         rising_end = falling_end;
         find_rising_edge(&falling_start, &falling_end, &rising_start, &rising_end); 
@@ -265,15 +283,18 @@ float get_segment_area (Point falling_start, Point falling_end) {
 void find_rising_edge(Point* falling_start, Point* falling_end, Point* rising_start, Point* rising_end) { 
     while (rising_start->x >= 0) {    
         int id = GET_ID(input_data[rising_start->y][rising_start->x]);
-        int direction = GET_DIRECTION(input_data[rising_start->y][rising_start->x]); 
-        if ((rising_start->x == falling_end->x) && (rising_start->y == falling_end->y)) { 
-            if ((direction == N) || (direction == NW)) {
+        int direction = GET_DIRECTION(input_data[rising_start->y][rising_start->x]);
+        //If this is the first point to check 
+        if ((rising_start->x == falling_end->x) && (rising_start->y == falling_end->y)) {       
+            //If the rising edge is not North or North West, then ignore
+            if ((direction == N) || (direction == NW)) {        
                 *(rising_end) = *(rising_start);     
                 find_rising_end(falling_start, falling_end, rising_start, rising_end);
                 break;
             }
         }
-        else if ((id == GET_ID(input_data[falling_end->y][falling_end->x])) && ((direction > W) || (direction < E))) {
+        //If this point has the same polygon ID and it's a rising edge.
+        else if ((id == GET_ID(input_data[falling_end->y][falling_end->x])) && ((direction > W) || (direction < E))) {      
             *(rising_end) = *(rising_start);           
             find_rising_end(falling_start, falling_end, rising_start, rising_end);
             break;
@@ -286,8 +307,10 @@ void find_rising_end(Point* falling_start, Point* falling_end, Point* rising_sta
     int direction = GET_DIRECTION(input_data[rising_start->y][rising_start->x]);
     bool reset = false;
     while (rising_end->y != falling_start->y) {
-        if (GET_DIRECTION(input_data[rising_end->y][rising_end->x]) != direction) {
-            reset_falling_end(falling_start, falling_end, rising_start, rising_end);
+        //If this is the end of the rising edge
+        if (GET_DIRECTION(input_data[rising_end->y][rising_end->x]) != direction) {     
+            //Reset the falling end point to current point's height
+            reset_falling_end(falling_start, falling_end, rising_start, rising_end);    
             reset = true;
             break;  
         }
@@ -309,11 +332,13 @@ void reset_falling_end(Point* falling_start, Point* falling_end, Point* rising_s
     temp.x = rising_end->x + top;
     temp.y = rising_end->y;
     int start_direction = GET_DIRECTION(input_data[temp.y][temp.x]);
+    //Try to follow the falling edge for verification
     while((GET_DIRECTION(input_data[temp.y][temp.x]) == start_direction) && ((temp.x != falling_end->x) || (temp.y != falling_end->y))) {
         temp.x += offset[start_direction][1];
         temp.y += offset[start_direction][0];
     }
-    if ((falling_end->x == temp.x) && (falling_end->y == temp.y)) {
+    //IF there is another falling edge in between
+    if ((falling_end->x == temp.x) && (falling_end->y == temp.y)) {      
         falling_end->x = rising_end->x + top;
         falling_end->y = rising_end->y;
     }
@@ -355,7 +380,8 @@ bool check_convex(int x, int y) {
         if (org_direction != future_direction) {
             int coming_from = (org_direction + 4 > NW) ? (org_direction + 4 - 8) : (org_direction + 4);
             int angle = (future_direction - coming_from > 0) ? ((future_direction - coming_from) * 45) : ((future_direction - coming_from + 8) * 45);
-            if (angle >= 180)
+            //if the angle between two direction is smaller than 180.
+            if (angle >= 180)       
                 org_direction = future_direction;
             else
                 return false;
@@ -369,12 +395,14 @@ unsigned int get_rotations(int x, int y, int total_points) {
     if ((total_points % 2) && (total_points % 4))
         return 1;
     int points_to_check = 0;
-    if (!(total_points % 4))
+    //Determine number of point to check
+    if (!(total_points % 4))        
         points_to_check = 4;
     else 
         points_to_check = 2;
     while (points_to_check) {
         int trend_start_x = x, trend_start_y = y, turning_offset = total_points / points_to_check,total_steps = turning_offset * (points_to_check - 1);
+        //Set point to its starting point
         while (total_steps) {
             int direction = GET_DIRECTION(input_data[trend_start_y][trend_start_x]);
             trend_start_x += offset[direction][1];
@@ -391,6 +419,7 @@ unsigned int get_rotations(int x, int y, int total_points) {
             }
             int turning_diff1 = get_turning_difference(&current_x, &current_y);
             int turning_diff2 = get_turning_difference(&trend_start_x, &trend_start_y);
+            //If the turning difference is not the same between two trend
             if (turning_diff1 != turning_diff2) {
                 turning_flag = false;
                 break;         
@@ -429,10 +458,12 @@ float determine_edge(int x, int y) {
     float pre_status = 1, current_status = 1;
     int previous_direction = get_neighbour(x, y, GET_ID(input_data[y][x]));
     previous_direction = (previous_direction + 4 > NW) ? (previous_direction + 4 - 8) : (previous_direction + 4); 
+    //Rising edge is 1 and falling edge is -1.
     if ((previous_direction > E) && (previous_direction < W))
         pre_status = -1;
     if ((current_direction > E) && (current_direction < W))
         current_status = -1;
+    //If there is horizontal direction, half the previous values
     if ((previous_direction == E) || (previous_direction == W)) { 
         pre_status = 0;
         current_status /= 2;
@@ -441,6 +472,7 @@ float determine_edge(int x, int y) {
         current_status = 0;
         pre_status /= 2;
     }
+    //rising + falling = 0, rising + rising or falling + falling equals +-2
     float summation = pre_status + current_status;
     if ((summation == 2) || (summation == -2))
         summation /= 2;
@@ -484,6 +516,7 @@ int polygon_init(Polygon** pt_polygon_list) {
                 last_polygon++;
             }   
         }
+    //Sorting firstly by Depth than by Polygon ID
     Polygon* temp_polygon_list = (Polygon*)malloc(sizeof(Polygon) * size);
     int total_member = size, write_cursor = 0;
     for (int depth = 0; total_member > 0; depth++) {
@@ -495,11 +528,13 @@ int polygon_init(Polygon** pt_polygon_list) {
             }
         }
     }
+    //Get Max and Min area
     float area_max = 0, area_min = 100000;
     for (int j = 0; j < size; j++) {
         area_max = ((*(temp_polygon_list + j)).area > area_max) ? (*(temp_polygon_list + j)).area : area_max;
         area_min = ((*(temp_polygon_list + j)).area < area_min) ? (*(temp_polygon_list + j)).area : area_min;
     } 
+    //Convert area to percentage
     for (int j = 0; j < size; j++) {
         float area = (*(temp_polygon_list + j)).area;
         int converted = (int)((1 - ((area - area_min) / (area_max - area_min))) * 1000);
