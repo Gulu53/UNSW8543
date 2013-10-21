@@ -24,9 +24,11 @@
 #define W 6
 #define NW 7
 //Use twelve bits for polygon IDs
-#define GET_ID(X) (X & 0b0000111111111111)      
+//#define GET_ID(X) (X & 0b0000111111111111)      
+#define GET_ID(X) (X & 0xFFF)      
 //Use three bits for direction coding
-#define GET_DIRECTION(X) ((X >> 12) & 0b0111)       
+//#define GET_DIRECTION(X) ((X >> 12) & 0b0111)       
+#define GET_DIRECTION(X) ((X >> 12) & 0x7)
 #define PAINT(DIRECTION, ID) ((DIRECTION << 12) + ID)       
 
 typedef struct {int x; int y;}Point;
