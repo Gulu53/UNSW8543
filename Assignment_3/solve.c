@@ -11,56 +11,26 @@
 #include <string.h>
 
 int count_sentences(int argc, char **argv);
-
-/* Sets the value of third argument.
- * Almost totally implemented. */
 void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
-
-/* Sets the value of second argument.
- * Totally implemented. */
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
-
-/* Returns true if the string provided as argument
- * is one of is, to, of, by, etc.
- * Returns false otherwise.
- * Not implemented */
 bool keyword(char *, char**);
+void sort(char**, int);
 
 int main(int argc, char **argv) {
-/* You might declare and use the following variables. */
-    
-/* Number of sentences in file
- * (equal to number of equations).
- * Code below shows how to determine its value. */
-    int sentences_nb;
-
-/* Number of occurrences of variables in file.
- * Code below does not show how to determine its value */
-    int variable_instances_nb;
-
-/* The beginning of an array that stores the beginning of each sentence
- * and the end of the last sentence.
- * Code below partially shows how to determine it. */
-    int *sentences;
-
-/* The beginning of an array that stores one occurrence of each variable.
- * Code below shows how to determine it. */
+    int sentences_nb, variable_instances_nb, *sentences;
     char **variable_instances;
-
-/* Your code might use the previous functions as follows. */
-
-/* To compute and use the value of 'sentences' */
+    //Count number of sentences present, so that number of equations can be determined. 
     sentences_nb = count_sentences(argc, argv);
     sentences = malloc((sentences_nb + 1) * sizeof(int));
+    //Store the location of each sentence's beginning in an array, the last element inicates the number of elements from the input.
     get_sentences(argc, argv, sentences, sentences_nb);
-    keyword(argv[2]);
 
-/* To compute and use the value of 'variable_instances' */
     //Requirement states: The number of variables is assumed to be equal to the number of equations.
     variable_instances_nb = sentences_nb;
-    variable_instances = malloc((variable_instances_nb + 1)* sizeof(char *));
-    varaible_instances[variable_instances_nb] = '\0';
+    variable_instances = malloc((variable_instances_nb)* sizeof(char *));
     get_variable_instances(argv, variable_instances, variable_instances_nb);
+    //Sort variables into lexicographical order using strcmp
+    sort(variable_instances, variable_instances_nb);
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
@@ -83,7 +53,7 @@ void get_sentences(int argc, char **argv, int *sentences, int sentences_nb) {
             if (argv[j][strlen(*(argv + j)) - 1] == ',')
                 argv[j][strlen(*(argv + j)) - 1] = '\0';
         }
-	/* Replaces full stop at end of sentence by null character. */
+    /* Replaces full stop at end of sentence by null character. */
         argv[j][strlen(argv[j]) - 1] = '\0';
     }
 }
@@ -96,13 +66,30 @@ void get_variable_instances(char **argv, char **variable_instances, int variable
     }
 }
 bool keyword(char* word, char** variable_instances) {
-    char **keywords = {"The", "result", "of", "multiplying", "by", "plus", "times", "is", "to", "equal", "product", 
-                        "and", "the", "adding", "sum", "equals", '\0'};
-    for (int i = 0; *(keywords + i); i++) {
+    char *keywords[] = {"The", "result", "of", "multiplying", "by", "plus", "times", "is", "to", 
+                        "equal", "product", "and", "the", "adding", "sum", "equals", '\0'};
+    for (int i = 0; *(keywords + i); i++)
         if (!strcmp(*(keywords + i), word))
             return true;
-    }
+    for (int i = 0; *(variable_instances + i); i++)
+        if (!strcmp(*(variable_instances +i), word))
+            return true; 
     return false;
+}
+void sort(char** variable_instances, int var_total) {
+    bool there_is_change = true;
+    if (var_total <= 1)
+        return;
+    while (there_is_change) {
+        there_is_change = false;
+        for (int i = 1; i < var_total; i++)
+            if (strcmp(*(variable_instances + i - 1), *(variable_instances + i)) > 0) {
+                char* addr_holder = *(variable_instances + i - 1);
+                *(variable_instances + i - 1) = *(variable_instances + i);
+                *(variable_instances + i) = addr_holder;
+                there_is_change = true;
+            }
+    }
 }
 
 
