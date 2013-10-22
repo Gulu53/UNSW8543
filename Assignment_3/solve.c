@@ -24,7 +24,7 @@ void get_variable_instances(char **argv, char **variable_instances, int variable
  * is one of is, to, of, by, etc.
  * Returns false otherwise.
  * Not implemented */
-bool keyword(char *);
+bool keyword(char *, char**);
 
 int main(int argc, char **argv) {
 /* You might declare and use the following variables. */
@@ -53,14 +53,17 @@ int main(int argc, char **argv) {
     sentences_nb = count_sentences(argc, argv);
     sentences = malloc((sentences_nb + 1) * sizeof(int));
     get_sentences(argc, argv, sentences, sentences_nb);
-    //...
-    //free(sentences);
+    keyword(argv[2]);
 
 /* To compute and use the value of 'variable_instances' */
-    //variable_instances = malloc(variable_instances_nb * sizeof(char *));
-    //get_variable_instances(argv, variable_instances, variable_instances_nb);
-    //...
-    //free(variable_instances);
+    //Requirement states: The number of variables is assumed to be equal to the number of equations.
+    variable_instances_nb = sentences_nb;
+    variable_instances = malloc((variable_instances_nb + 1)* sizeof(char *));
+    varaible_instances[variable_instances_nb] = '\0';
+    get_variable_instances(argv, variable_instances, variable_instances_nb);
+    for (int i = 0; i < variable_instances_nb; i++) 
+        printf(" %s ", *(variable_instances + i));
+    putchar('\n');
 }
 int count_sentences(int argc, char **argv) {
     int sentences_nb = 0, i = 0;
@@ -77,10 +80,8 @@ void get_sentences(int argc, char **argv, int *sentences, int sentences_nb) {
         sentences[i++] = ++j;
         while (j < argc - 1 && strcmp(argv[j + 1], "The")) {
             ++j;
-	    /* Here you might want to check if string pointed to
-	     * ends in a comma and in case it does,
-	     * replace the comma by null character. */
-            //...
+            if (argv[j][strlen(*(argv + j)) - 1] == ',')
+                argv[j][strlen(*(argv + j)) - 1] = '\0';
         }
 	/* Replaces full stop at end of sentence by null character. */
         argv[j][strlen(argv[j]) - 1] = '\0';
@@ -89,15 +90,15 @@ void get_sentences(int argc, char **argv, int *sentences, int sentences_nb) {
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb) {
     int i = 0, n = 1, nb = variable_instances_nb;
     while (nb--) {
-        while (argv[n][0] != '_' && (!isalpha(argv[n][0]) || keyword(argv[n])))
+        while (argv[n][0] != '_' && (!isalpha(argv[n][0]) || keyword(argv[n], variable_instances)))
             ++n;
         variable_instances[i++] = argv[n++];
     }
 }
-bool keyword(char* word) {
-    char *keywords[] = {"The", "result", "of", "multiplying", "by", "plus", "times", "is", "to", "equal", "product", 
-                        "and", "the", "adding", "sum", "equals"};
-    for (int i = 0; keywords; i++) {
+bool keyword(char* word, char** variable_instances) {
+    char **keywords = {"The", "result", "of", "multiplying", "by", "plus", "times", "is", "to", "equal", "product", 
+                        "and", "the", "adding", "sum", "equals", '\0'};
+    for (int i = 0; *(keywords + i); i++) {
         if (!strcmp(*(keywords + i), word))
             return true;
     }
