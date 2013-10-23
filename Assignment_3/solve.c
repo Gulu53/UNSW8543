@@ -24,13 +24,19 @@ int main(int argc, char **argv) {
     sentences = malloc((sentences_nb + 1) * sizeof(int));
     //Store the location of each sentence's beginning in an array, the last element inicates the number of elements from the input.
     get_sentences(argc, argv, sentences, sentences_nb);
-
     //Requirement states: The number of variables is assumed to be equal to the number of equations.
     variable_instances_nb = sentences_nb;
     variable_instances = malloc((variable_instances_nb)* sizeof(char *));
     get_variable_instances(argv, variable_instances, variable_instances_nb);
     //Sort variables into lexicographical order using strcmp
     sort(variable_instances, variable_instances_nb);
+    //Initialise a n x n matrix for variable instances, plus an additional column for constants
+    double equations[sentences_nb][sentences_nb + 1];
+    for (int i = 0; i < sentences_nb; i++)
+        for (int j = 0; j < (sentences_nb + 1); j++)
+            equations[i][j] = 0.0;
+
+     
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
