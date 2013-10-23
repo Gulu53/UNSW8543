@@ -15,6 +15,7 @@ void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
 bool keyword(char *, char**);
 void sort(char**, int);
+void process_sentences(char **argv, int sentence_start, double **equation, char **variable_instances);
 
 int main(int argc, char **argv) {
     int sentences_nb, variable_instances_nb, *sentences;
@@ -31,15 +32,22 @@ int main(int argc, char **argv) {
     //Sort variables into lexicographical order using strcmp
     sort(variable_instances, variable_instances_nb);
     //Initialise a n x n matrix for variable instances, plus an additional column for constants
-    double equations[sentences_nb][sentences_nb + 1];
+    double **equations = malloc((sentences_nb) * sizeof(double*));
+    for (int i = 0; i < sentences_nb; i++)
+        *(equations + i) = malloc((sentences_nb + 1) * sizeof(double)); 
     for (int i = 0; i < sentences_nb; i++)
         for (int j = 0; j < (sentences_nb + 1); j++)
             equations[i][j] = 0.0;
+    for (int i = 0; i < sentences_nb; i++)
+        process_sentences(argv, *(sentences + i), equations, variable_instances);
 
-     
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
+}
+void process_sentences(char **argv, int sentence_start, double **equation, char **variable_instances) {
+    char *group_1[] = {"product", "times", "multiplying"}, *group_2[] = {"and", "by"};, *group_3[] ={"equals", "equal"};
+      
 }
 int count_sentences(int argc, char **argv) {
     int sentences_nb = 0, i = 0;
