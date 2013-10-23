@@ -9,13 +9,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 int count_sentences(int argc, char **argv);
 void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
 bool keyword(char *, char**);
 void sort(char**, int);
-void process_sentences(char **argv, int sentence_start, double **equation, char **variable_instances);
+void process_sentences(char **argv, int equation_nb, int sentence_start, int matrix_size, double **equation, char **variable_instances);
+bool isnumeric(double *number, char *input);
+bool isimportant(char *keyword, int *category); 
+bool isvariable(char *keyword, char **variable_instances, int *index); 
+void multiplication (char **argv, int *pt_i, int category, double **equation, int equation_nb, char **variable_instances); 
 
 int main(int argc, char **argv) {
     int sentences_nb, variable_instances_nb, *sentences;
@@ -39,15 +44,96 @@ int main(int argc, char **argv) {
         for (int j = 0; j < (sentences_nb + 1); j++)
             equations[i][j] = 0.0;
     for (int i = 0; i < sentences_nb; i++)
-        process_sentences(argv, *(sentences + i), equations, variable_instances);
+        process_sentences(argv, i, *(sentences + i), sentences_nb, equations, variable_instances);
 
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
 }
-void process_sentences(char **argv, int sentence_start, double **equation, char **variable_instances) {
-    char *group_1[] = {"product", "times", "multiplying"}, *group_2[] = {"and", "by"};, *group_3[] ={"equals", "equal"};
-      
+void process_sentences(char **argv, int equation_nb, int sentence_start, int matrix_size, double **equation, char **variable_instances) {
+    int category = 0, index = 0, *pt_category = &category, *pt_index = &index;
+    double number = 0, *pt_number = &number;
+    bool inverse = false;
+    for (int i = sentence_start; *(argv + i); i++) {
+        //If this keyword is going to execute mutiplication
+        if (isimportant(*(argv + i), pt_category)) {
+            if (category >= 3) {
+                inverse = true;
+                continue;
+            }
+            else {
+                int *pt_i = &i; 
+                multiplication (argv, pt_i, category, equation, equation_nb, variable_instances); 
+            }
+        }
+        //If this keyword is the varaible instance
+        if (isvariable(*(argv + i), variable_instances, pt_index)) {
+            equation[equation_nb][index] = (inverse) ? (equation[equation_nb][index] - 1) : (equation[equation_nb][index] + 1);
+            continue;
+        }
+        //If this keyword is numeric value
+        if (isnumeric(pt_number, *(argv + i))) {
+            equation[equation_nb][matrix_size] = (inverse) ? (equation[equation_nb][matrix_size] - number) : (equation[equation_nb][matrix_size] + number);
+            number = 0;
+            continue;
+        }
+    }
+    equation[equation_nb][matrix_size] = equation[equation_nb][matrix_size] * -1;
+    printf("The answer is %f\n", equation[equation_nb][matrix_size]);
+}
+void multiplication (char **argv, int *pt_i, int category, double **equation, int equation_nb, char **variable_instances) {
+    char  *words[] = {"and", "by", '\0'}; 
+}
+bool isimportant(char *keyword, int *category) {   
+    //Only taking the multiplication operations as important
+    char *words[] = {"product", "multiplying", "times", "equals", "equal", '\0'};
+    for (int i = 0; *(words + i); i++) {
+        if (!(strcmp(keyword, *(words + i)))) {
+            *category = i;
+            return true;
+        }
+    } 
+    return false;
+}
+bool isvariable(char *keyword, char **variable_instances, int *index) {
+    for (int i = 0; *(variable_instances + i); i++) {
+        if (!(strcmp(keyword, *(variable_instances + i)))) {
+            *index = i;
+            return true;
+        }
+    } 
+    return false;
+}
+bool isnumeric(double *number, char *input) {
+    //Return false if there are alphabets presents
+    for (int i = 0; *(input + i); i++) {
+        if (isalpha(*(input + i)))
+            return false;
+        if ((*(input + i) == '-') && (i != 0))
+            return false;
+    }
+    bool neg = (*(input) == '-') ? true : false, decimal_point = false;
+    double power = 0, ans = 0;
+    for (int i = 0; *(input + i); i++) {
+        if ((neg) && (i == 0))
+            continue;  
+        if (*(input + i) == '.') {
+            if (!(decimal_point)) {
+                decimal_point = true;
+                power = -1;
+                continue;
+            }
+            else
+                return false;
+        }
+        if (isdigit(*(input + i))) {
+            *number = *number + (double)(*(input + i) - '0') * pow(10.0, power);
+            printf("The sum is %f\n", *number);
+            power = (decimal_point) ? --power : ++power;
+        }
+    }
+    *number = (neg) ? (*number * -1) : *number;
+    return true;
 }
 int count_sentences(int argc, char **argv) {
     int sentences_nb = 0, i = 0;
