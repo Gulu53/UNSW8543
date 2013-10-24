@@ -11,6 +11,8 @@
 #include <string.h>
 #include <math.h>
 
+typedef struct {int start; int end}Skip;
+
 int count_sentences(int argc, char **argv);
 void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
@@ -51,9 +53,10 @@ int main(int argc, char **argv) {
     putchar('\n');
 }
 void process_sentences(char **argv, int equation_nb, int sentence_start, int matrix_size, double **equation, char **variable_instances) {
-    int category = 0, index = 0, *pt_category = &category, *pt_index = &index;
+    int category = 0, index = 0, *pt_category = &category, *pt_index = &index, list_size = 1;
     double number = 0, *pt_number = &number;
     bool inverse = false;
+    Skip *pt_skip_list = malloc((list_size) * sizeof(Skip));
     for (int i = sentence_start; *(argv + i); i++) {
         //If this keyword is going to execute mutiplication
         if (isimportant(*(argv + i), pt_category)) {
@@ -62,10 +65,14 @@ void process_sentences(char **argv, int equation_nb, int sentence_start, int mat
                 continue;
             }
             else {
-                int *pt_i = &i; 
+                int *pt_i = &i;
+                list_size++;
+                 
                 multiplication (argv, pt_i, category, equation, equation_nb, variable_instances); 
             }
         }
+    }
+    for (int i = sentence_start; *(argv + i); i++) {
         //If this keyword is the varaible instance
         if (isvariable(*(argv + i), variable_instances, pt_index)) {
             equation[equation_nb][index] = (inverse) ? (equation[equation_nb][index] - 1) : (equation[equation_nb][index] + 1);
@@ -83,6 +90,13 @@ void process_sentences(char **argv, int equation_nb, int sentence_start, int mat
 }
 void multiplication (char **argv, int *pt_i, int category, double **equation, int equation_nb, char **variable_instances) {
     char  *words[] = {"and", "by", '\0'}; 
+    int i = *pt_i;
+    double ans = 1, number = 0, *pt_number = &number;
+    //If the keyword is times
+    if (category == 2) {
+        if (isnumeric(pt_number, argv[i - 1]))
+
+    }
 }
 bool isimportant(char *keyword, int *category) {   
     //Only taking the multiplication operations as important
