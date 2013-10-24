@@ -11,18 +11,19 @@
 #include <string.h>
 #include <math.h>
 
-typedef struct {int start; int end}Skip;
+typedef struct {int start; int end;}Skip;
 
 int count_sentences(int argc, char **argv);
 void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
 bool keyword(char *, char**);
 void sort(char**, int);
-void process_sentences(char **argv, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances);
+void process_sentences(char **argv, int *sentences, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances);
 bool isnumeric(double *number, char *input);
 bool isimportant(char *keyword, int *category); 
-bool isvariable(char *keyword, char **variable_instances, int *index); 
-void times (char **argv, int *pt_i, int *nth_column, char **variable_instances); 
+bool isvariable(char *keyword, char **variable_instances, int *index, int sentences_nb); 
+double times (char **argv, int *pt_i, int *nth_colume, char **variable_instances, int sentences_nb); 
+double product_multiplying(char **argv, int *pt_i, int *nth_colume, char **variable_instances, char *end_word, int sentences_nb);
 
 int main(int argc, char **argv) {
     int sentences_nb, variable_instances_nb, *sentences;
@@ -46,62 +47,103 @@ int main(int argc, char **argv) {
         for (int j = 0; j < (sentences_nb + 1); j++)
             equations[i][j] = 0.0;
     for (int i = 0; i < sentences_nb; i++)
-        process_sentences(argv, i, *(sentences + i), sentences_nb, equations, variable_instances);
+        process_sentences(argv, i, *sentences, sentences_nb, equations, variable_instances);
 
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
 }
-void process_sentences(char **argv, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances) {
+void process_sentences(char **argv, int *sentences, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances) {
     int category = 0, index = 0, *pt_category = &category, *pt_index = &index, list_size = 1;
     double number = 0, *pt_number = &number;
     bool inverse = false;
     Skip *pt_skip_list = malloc((list_size) * sizeof(Skip));
+    //Calculate all the mutiplications and records the start and end of each multiplication statements' locations 
     for (int i = sentence_start; *(argv + i); i++) {
-        //If this keyword is going to execute mutiplication
         if (isimportant(*(argv + i), pt_category)) {
             if (category >= 3) {
                 inverse = true;
                 continue;
             }
             int *pt_i = &i, nth_colume = sentences_nb, *pt_nth_colume = &nth_colume;
+            double result = 0;
             list_size++;
-            pt_skip_list = realloc(pt_skip_list, list_size);
-            if (category == 2) {
-                pt_skip_list[list_size - 2].start = i;
-                times(argv, pt_i, pt_nth_colume, variable_instances); 
-                pt_skip_list[list_size - 2].end = i;
-                continue;
+            pt_skip_list = realloc(pt_skip_list, (list_size * sizeof(Skip)));
+            pt_skip_list[list_size - 2].start = (category == 2) ? (i - 1) : i;
+            if (category == 2) 
+                result = times(argv, pt_i, pt_nth_colume, variable_instances, sentences_nb); 
+            else {
+                char *end_word = (category) ? "by" : "and";
+                result = product_multiplying(argv, pt_i, pt_nth_colume, variable_instances, end_word, sentences_nb);  
             }
+            pt_skip_list[list_size - 2].end = i;
+            equation[nth_equation][nth_colume] += (inverse) ? (-1 * result) : result; 
         }
     }
+    //Calculate all the addition, skip the multiplication statements
+    int list_read_pt = 0;
+    inverse = false;
     for (int i = sentence_start; *(argv + i); i++) {
+        //If this is the start of a multiplication stament, skip it.
+        if (list_read_pt <= list_size) {
+            if (pt_skip_list[list_read_pt].start == i) {
+                i = pt_skip_list[list_read_pt].end;
+                list_read_pt++; 
+                continue;
+            } 
+        }
+        //If this keyword is equal or equals
+        if (isimportant(*(argv + i), pt_category)) { 
+            inverse = (category >= 3) ? true : false;
+            continue;
+        }
         //If this keyword is the varaible instance
-        if (isvariable(*(argv + i), variable_instances, pt_index)) {
+        if (isvariable(*(argv + i), variable_instances, pt_index, sentences_nb)) {
             equation[nth_equation][index] = (inverse) ? (equation[nth_equation][index] - 1) : (equation[nth_equation][index] + 1);
             continue;
         }
         //If this keyword is numeric value
         if (isnumeric(pt_number, *(argv + i))) {
             equation[nth_equation][sentences_nb] = (inverse) ? (equation[nth_equation][sentences_nb] - number) : (equation[nth_equation][sentences_nb] + number);
-            number = 0;
             continue;
         }
     }
+    free(pt_skip_list);
     equation[nth_equation][sentences_nb] = equation[nth_equation][sentences_nb] * -1;
-    printf("The answer is %f\n", equation[nth_equation][sentences_nb]);
+    for (int i = 0; variable_instances[i]; i++)
+        printf("%f%s", equation[nth_equation][i], variable_instances[i]);
+    printf(" = %f\n", equation[nth_equation][sentences_nb]);
 }
-void times(char **argv, int *pt_i, int *nth_column, char **variable_instances) {
+double product_multiplying(char **argv, int *pt_i, int *nth_colume, char **variable_instances, char *end_word, int sentences_nb) {
     int i = *pt_i;
     double ans = 1, number = 0, *pt_number = &number;
-    if (category == 2) {
-        if (isnumeric(pt_number, argv[i - 1])) {
+    while (!(isnumeric(pt_number, argv[i]) || isvariable(argv[i], variable_instances, nth_colume, sentences_nb))) 
+        i++;
+    while (strcmp(argv[i],end_word)) {
+        if (isnumeric(pt_number, argv[i])) 
             ans *= number;
-            number = 0;
-        }
-        else {
-        }
+        else 
+            isvariable(argv[i], variable_instances, nth_colume, sentences_nb);
+        i++;
     }
+    if (isnumeric(pt_number, argv[i + 1])) 
+        ans *= number;
+    else 
+        isvariable(argv[i + 1], variable_instances, nth_colume, sentences_nb);
+    *pt_i = i + 1;
+    return ans;
+}
+double times(char **argv, int *pt_i, int *nth_colume, char **variable_instances, int sentences_nb) {
+    int i = *pt_i;
+    double ans = 1, number = 0, *pt_number = &number;
+    for (int j = -1; j <= 1; j += 2) { 
+        if (isnumeric(pt_number, argv[i + j])) 
+            ans *= number;
+        else 
+            isvariable(argv[i + j], variable_instances, nth_colume, sentences_nb);
+    }
+    *pt_i = *pt_i + 1;
+    return ans;
 }
 bool isimportant(char *keyword, int *category) {   
     //Only taking the multiplication operations as important
@@ -114,8 +156,8 @@ bool isimportant(char *keyword, int *category) {
     } 
     return false;
 }
-bool isvariable(char *keyword, char **variable_instances, int *index) {
-    for (int i = 0; *(variable_instances + i); i++) {
+bool isvariable(char *keyword, char **variable_instances, int *index, int sentences_nb) {
+    for (int i = 0; i < sentences_nb; i++) {
         if (!(strcmp(keyword, *(variable_instances + i)))) {
             *index = i;
             return true;
@@ -133,6 +175,7 @@ bool isnumeric(double *number, char *input) {
     }
     bool neg = (*(input) == '-') ? true : false, decimal_point = false;
     double power = 0, ans = 0;
+    *number = 0;
     for (int i = 0; *(input + i); i++) {
         if ((neg) && (i == 0))
             continue;  
@@ -146,9 +189,14 @@ bool isnumeric(double *number, char *input) {
                 return false;
         }
         if (isdigit(*(input + i))) {
-            *number = *number + (double)(*(input + i) - '0') * pow(10.0, power);
-            printf("The sum is %f\n", *number);
-            power = (decimal_point) ? --power : ++power;
+            if (decimal_point)
+                *number = *number + (double)(*(input + i) - '0') * pow(10.0, power);
+            else 
+                *number = *number * pow(10, power) + (double)(*(input + i) - '0');
+            if (decimal_point)
+                --power;
+            else
+                power = 1;
         }
     }
     *number = (neg) ? (*number * -1) : *number;
