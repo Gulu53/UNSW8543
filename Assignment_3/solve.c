@@ -18,11 +18,11 @@ void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
 bool keyword(char *, char**);
 void sort(char**, int);
-void process_sentences(char **argv, int equation_nb, int sentence_start, int matrix_size, double **equation, char **variable_instances);
+void process_sentences(char **argv, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances);
 bool isnumeric(double *number, char *input);
 bool isimportant(char *keyword, int *category); 
 bool isvariable(char *keyword, char **variable_instances, int *index); 
-void multiplication (char **argv, int *pt_i, int category, double **equation, int equation_nb, char **variable_instances); 
+void times (char **argv, int *pt_i, int *nth_column, char **variable_instances); 
 
 int main(int argc, char **argv) {
     int sentences_nb, variable_instances_nb, *sentences;
@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
 }
-void process_sentences(char **argv, int equation_nb, int sentence_start, int matrix_size, double **equation, char **variable_instances) {
+void process_sentences(char **argv, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances) {
     int category = 0, index = 0, *pt_category = &category, *pt_index = &index, list_size = 1;
     double number = 0, *pt_number = &number;
     bool inverse = false;
@@ -64,38 +64,43 @@ void process_sentences(char **argv, int equation_nb, int sentence_start, int mat
                 inverse = true;
                 continue;
             }
-            else {
-                int *pt_i = &i;
-                list_size++;
-                 
-                multiplication (argv, pt_i, category, equation, equation_nb, variable_instances); 
+            int *pt_i = &i, nth_colume = sentences_nb, *pt_nth_colume = &nth_colume;
+            list_size++;
+            pt_skip_list = realloc(pt_skip_list, list_size);
+            if (category == 2) {
+                pt_skip_list[list_size - 2].start = i;
+                times(argv, pt_i, pt_nth_colume, variable_instances); 
+                pt_skip_list[list_size - 2].end = i;
+                continue;
             }
         }
     }
     for (int i = sentence_start; *(argv + i); i++) {
         //If this keyword is the varaible instance
         if (isvariable(*(argv + i), variable_instances, pt_index)) {
-            equation[equation_nb][index] = (inverse) ? (equation[equation_nb][index] - 1) : (equation[equation_nb][index] + 1);
+            equation[nth_equation][index] = (inverse) ? (equation[nth_equation][index] - 1) : (equation[nth_equation][index] + 1);
             continue;
         }
         //If this keyword is numeric value
         if (isnumeric(pt_number, *(argv + i))) {
-            equation[equation_nb][matrix_size] = (inverse) ? (equation[equation_nb][matrix_size] - number) : (equation[equation_nb][matrix_size] + number);
+            equation[nth_equation][sentences_nb] = (inverse) ? (equation[nth_equation][sentences_nb] - number) : (equation[nth_equation][sentences_nb] + number);
             number = 0;
             continue;
         }
     }
-    equation[equation_nb][matrix_size] = equation[equation_nb][matrix_size] * -1;
-    printf("The answer is %f\n", equation[equation_nb][matrix_size]);
+    equation[nth_equation][sentences_nb] = equation[nth_equation][sentences_nb] * -1;
+    printf("The answer is %f\n", equation[nth_equation][sentences_nb]);
 }
-void multiplication (char **argv, int *pt_i, int category, double **equation, int equation_nb, char **variable_instances) {
-    char  *words[] = {"and", "by", '\0'}; 
+void times(char **argv, int *pt_i, int *nth_column, char **variable_instances) {
     int i = *pt_i;
     double ans = 1, number = 0, *pt_number = &number;
-    //If the keyword is times
     if (category == 2) {
-        if (isnumeric(pt_number, argv[i - 1]))
-
+        if (isnumeric(pt_number, argv[i - 1])) {
+            ans *= number;
+            number = 0;
+        }
+        else {
+        }
     }
 }
 bool isimportant(char *keyword, int *category) {   
