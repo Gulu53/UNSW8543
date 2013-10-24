@@ -18,7 +18,7 @@ void get_sentences(int argc, char **argv, int *sentences, int sentences_nb);
 void get_variable_instances(char **argv, char **variable_instances, int variable_instances_nb);
 bool keyword(char *, char**);
 void sort(char**, int);
-void process_sentences(char **argv, int *sentences, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances);
+void process_sentences(char **argv, int *sentences, int nth_equation, int sentences_nb, double **equation, char **variable_instances);
 bool isnumeric(double *number, char *input);
 bool isimportant(char *keyword, int *category); 
 bool isvariable(char *keyword, char **variable_instances, int *index, int sentences_nb); 
@@ -47,19 +47,19 @@ int main(int argc, char **argv) {
         for (int j = 0; j < (sentences_nb + 1); j++)
             equations[i][j] = 0.0;
     for (int i = 0; i < sentences_nb; i++)
-        process_sentences(argv, i, *sentences, sentences_nb, equations, variable_instances);
+        process_sentences(argv, sentences, i, sentences_nb, equations, variable_instances);
 
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
 }
-void process_sentences(char **argv, int *sentences, int nth_equation, int sentence_start, int sentences_nb, double **equation, char **variable_instances) {
+void process_sentences(char **argv, int *sentences, int nth_equation, int sentences_nb, double **equation, char **variable_instances) {
     int category = 0, index = 0, *pt_category = &category, *pt_index = &index, list_size = 1;
     double number = 0, *pt_number = &number;
     bool inverse = false;
     Skip *pt_skip_list = malloc((list_size) * sizeof(Skip));
     //Calculate all the mutiplications and records the start and end of each multiplication statements' locations 
-    for (int i = sentence_start; *(argv + i); i++) {
+    for (int i = *(sentences + nth_equation); i < *(sentences + nth_equation + 1); i++) {
         if (isimportant(*(argv + i), pt_category)) {
             if (category >= 3) {
                 inverse = true;
@@ -83,7 +83,7 @@ void process_sentences(char **argv, int *sentences, int nth_equation, int senten
     //Calculate all the addition, skip the multiplication statements
     int list_read_pt = 0;
     inverse = false;
-    for (int i = sentence_start; *(argv + i); i++) {
+    for (int i = *(sentences + nth_equation); i < *(sentences + nth_equation + 1); i++) {
         //If this is the start of a multiplication stament, skip it.
         if (list_read_pt <= list_size) {
             if (pt_skip_list[list_read_pt].start == i) {
