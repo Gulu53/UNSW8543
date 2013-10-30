@@ -24,6 +24,7 @@ bool isimportant(char *keyword, int *category);
 bool isvariable(char *keyword, char **variable_instances, int *index, int sentences_nb); 
 double times (char **argv, int *pt_i, int *nth_colume, char **variable_instances, int sentences_nb); 
 double product_multiplying(char **argv, int *pt_i, int *nth_colume, char **variable_instances, char *end_word, int sentences_nb);
+bool solver(double **equation, double *pt_solution_list, int variable_instances_nb); 
 
 int main(int argc, char **argv) {
     int sentences_nb, variable_instances_nb, *sentences;
@@ -37,21 +38,70 @@ int main(int argc, char **argv) {
     variable_instances_nb = sentences_nb;
     variable_instances = malloc((variable_instances_nb)* sizeof(char *));
     get_variable_instances(argv, variable_instances, variable_instances_nb);
-    //Sort variables into lexicographical order using strcmp
+    //Sort variables into lexicographical order using strcmp and then print out the variables
     sort(variable_instances, variable_instances_nb);
-    //Initialise a n x n matrix for variable instances, plus an additional column for constants
-    double **equations = malloc((sentences_nb) * sizeof(double*));
-    for (int i = 0; i < sentences_nb; i++)
-        *(equations + i) = malloc((sentences_nb + 1) * sizeof(double)); 
-    for (int i = 0; i < sentences_nb; i++)
-        for (int j = 0; j < (sentences_nb + 1); j++)
-            equations[i][j] = 0.0;
-    for (int i = 0; i < sentences_nb; i++)
-        process_sentences(argv, sentences, i, sentences_nb, equations, variable_instances);
-
+    printf("The variables are:\n    ");
     for (int i = 0; i < variable_instances_nb; i++) 
         printf(" %s ", *(variable_instances + i));
     putchar('\n');
+    //Initialise a n x n matrix for variable instances, plus an additional column for constants
+    double **equation = malloc((sentences_nb) * sizeof(double*));
+    for (int i = 0; i < sentences_nb; i++)
+        *(equation + i) = malloc((sentences_nb + 1) * sizeof(double)); 
+    for (int i = 0; i < sentences_nb; i++)
+        for (int j = 0; j < (sentences_nb + 1); j++)
+            equation[i][j] = 0.0;
+    printf("The equations are:\n");
+    for (int i = 0; i < sentences_nb; i++)
+        process_sentences(argv, sentences, i, sentences_nb, equation, variable_instances);
+    //Initialise the space for solution
+    double *solution_list = malloc(variable_instances_nb * sizeof(double));
+    if (solver(equation, solution_list, variable_instances_nb)) {
+        printf("The system of equations has a unique solution:\n");
+        for (int i = 0; i < variable_instances_nb; i++)
+            printf("    %s = %.2f\n", variable_instances[i], solution_list[i]);
+    }
+    else
+        printf("The system of equations has no solution or more than one solution.\n"); 
+}
+bool solver(double **equation, double *pt_solution_list, int variable_instances_nb) {
+    for (int i = 0; i < variable_instances_nb; i++) {
+        //Find the row with the largest first value, starting from colume i
+        int max_row = i;
+        for (int j = i + 1; j < variable_instances_nb; j++) {
+            if (abs(equation[j][i]) > abs(equation[max_row][i]))
+               max_row = j;
+        }
+        //Swap the max_row with the ith row 
+        if (max_row != i) {
+            double *temp_hold = *(equation + i);
+            *(equation + i) = *(equation + max_row);
+            *(equation + max_row) = temp_hold;
+        }
+        //Check if sigular
+        if (!(equation[i][i]))
+            return false;
+        //Eliminate the colume values below the matrix[i][i]
+        for (int j = i + 1; j < variable_instances_nb; j++) {
+            for (int k = variable_instances_nb; k >= i; k--)
+                equation[j][k] -=  equation[i][k] * (equation[j][i] / equation[i][i]);
+        } 
+    }
+    for (int i = 0; i < variable_instances_nb; i++) {
+        for (int j = 0; j <= variable_instances_nb; j++)
+            printf(" %f", equation[i][j]);
+        putchar('\n');
+    } 
+    //Back substitution
+    pt_solution_list[variable_instances_nb - 1] = equation[variable_instances_nb - 1][variable_instances_nb] / equation[variable_instances_nb - 1][variable_instances_nb - 1];
+    for (int i = variable_instances_nb - 2; i >= 0; i--) {
+        double temp_hold = 0;
+        int j = variable_instances_nb - 1;
+        for (; j > i; j--)
+            temp_hold += equation[i][j] * pt_solution_list[j];
+        pt_solution_list[i] = (equation[i][variable_instances_nb] - temp_hold) / equation[i][j];
+    }
+    return true;
 }
 void process_sentences(char **argv, int *sentences, int nth_equation, int sentences_nb, double **equation, char **variable_instances) {
     int category = 0, index = 0, *pt_category = &category, *pt_index = &index, list_size = 1;
@@ -85,7 +135,7 @@ void process_sentences(char **argv, int *sentences, int nth_equation, int senten
     inverse = false;
     for (int i = *(sentences + nth_equation); i < *(sentences + nth_equation + 1); i++) {
         //If this is the start of a multiplication stament, skip it.
-        if (list_read_pt <= list_size) {
+        if (list_read_pt <= list_size - 2) {
             if (pt_skip_list[list_read_pt].start == i) {
                 i = pt_skip_list[list_read_pt].end;
                 list_read_pt++; 
@@ -110,9 +160,13 @@ void process_sentences(char **argv, int *sentences, int nth_equation, int senten
     }
     free(pt_skip_list);
     equation[nth_equation][sentences_nb] = equation[nth_equation][sentences_nb] * -1;
-    for (int i = 0; variable_instances[i]; i++)
-        printf("%f%s", equation[nth_equation][i], variable_instances[i]);
-    printf(" = %f\n", equation[nth_equation][sentences_nb]);
+    //Print out equations.
+    for (int i = 0; i < sentences_nb; i++) {
+        char *prepend = (i) ? ("  +  ") : ("     ");
+        printf("%s", prepend);
+        printf("%.2f %s", equation[nth_equation][i], variable_instances[i]);
+    }
+    printf(" = %.2f\n", equation[nth_equation][sentences_nb]);
 }
 double product_multiplying(char **argv, int *pt_i, int *nth_colume, char **variable_instances, char *end_word, int sentences_nb) {
     int i = *pt_i;
